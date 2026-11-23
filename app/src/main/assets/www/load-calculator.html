@@ -1,0 +1,1569 @@
+<!doctype html><html><head><script>/* Android app bridge: lets "save PDF/CSV" buttons write to Downloads */
+(function(){if(!window.AndroidBridge)return;
+function b64(d){return new Promise(function(res,rej){if(typeof d==="string")d=new Blob([d]);var fr=new FileReader();fr.onload=function(){res(String(fr.result).split(",")[1])};fr.onerror=rej;fr.readAsDataURL(d)})}
+function mime(n){return /\.pdf$/i.test(n)?"application/pdf":/\.csv$/i.test(n)?"text/csv":/\.png$/i.test(n)?"image/png":/\.jpe?g$/i.test(n)?"image/jpeg":"application/octet-stream"}
+var dl={save:function(o){var n=o.filename||"file";return b64(o.data).then(function(s){var r=window.AndroidBridge.saveFile(n,s,mime(n));if(r!=="saved")throw{code:"unavailable",message:r};return{status:"saved"}})}};
+window.claude=window.claude||{};window.claude.use=function(n){return Promise.resolve(n==="downloads"?dl:null)};
+document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a[download]");if(!a||!/^(blob|data):/.test(a.href))return;e.preventDefault();fetch(a.href).then(function(r){return r.blob()}).then(function(b){return dl.save({filename:a.getAttribute("download")||"file",data:b})}).catch(function(){})},true);
+})();</script><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Vardaman Truss Load Calculator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: navy Vardaman band with lattice texture and key figures; truss picker strip; inputs left, live span drawing and results right; drawing-sheet details, charts and tables below */
+:root{
+  --bg:#e9edf2; --surface:#ffffff; --surface-2:#f3f6f9; --line:#d3d9e1; --ink:#0d1b33; --muted:#566377;
+  --input:#0a5ab8; --input-soft:#e4edf9; --input-ink:#0b2a57;
+  --g-chord:#0a5ab8; --g-spigot:#7a3db8; --g-brace:#0f8a83; --g-joint:#c26a00; --g-defl:#7d8899;
+  --navy:#0b1d3a; --navy-2:#132b52; --silver:#c3cad4; --silver-hi:#eef1f5; --silver-lo:#8a94a3; --on-navy:#e9eef5; --on-navy-muted:#a9b6c9;
+  --ok:#1f7a4a; --ok-soft:#dff2e7; --warn:#a86300; --warn-soft:#fbefd9; --bad:#b3261e; --bad-soft:#fbe3e1;
+  --track:#e3e8ee; --sheet:#f7f9fc; --sheet-line:#e4e9f0; --steel:#3a475c; --steel-2:#8693a6; --btn:#0b1d3a; --btn-ink:#ffffff;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0a1220; --surface:#111c2e; --surface-2:#16233a; --line:#26344b; --ink:#e6ebf2; --muted:#98a5b8;
+  --input:#5c9df0; --input-soft:#122540; --input-ink:#cfe1f8;
+  --g-chord:#5c9df0; --g-spigot:#b48ae8; --g-brace:#4cc3b9; --g-joint:#f0a94a; --g-defl:#98a5b8;
+  --navy:#071327; --navy-2:#0f2244; --silver:#7d8899; --silver-hi:#c9d0da; --silver-lo:#4c5666; --on-navy:#e9eef5; --on-navy-muted:#a9b6c9;
+  --ok:#5cc58d; --ok-soft:#14301f; --warn:#e7a744; --warn-soft:#352711; --bad:#f07c73; --bad-soft:#3a1a18;
+  --track:#26303b; --sheet:#0e1829; --sheet-line:#1a2740; --steel:#c3ccd9; --steel-2:#6f7d93; --btn:#5c9df0; --btn-ink:#071327; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0a1220; --surface:#111c2e; --surface-2:#16233a; --line:#26344b; --ink:#e6ebf2; --muted:#98a5b8;
+  --input:#5c9df0; --input-soft:#122540; --input-ink:#cfe1f8;
+  --g-chord:#5c9df0; --g-spigot:#b48ae8; --g-brace:#4cc3b9; --g-joint:#f0a94a; --g-defl:#98a5b8;
+  --navy:#071327; --navy-2:#0f2244; --silver:#7d8899; --silver-hi:#c9d0da; --silver-lo:#4c5666; --on-navy:#e9eef5; --on-navy-muted:#a9b6c9;
+  --ok:#5cc58d; --ok-soft:#14301f; --warn:#e7a744; --warn-soft:#352711; --bad:#f07c73; --bad-soft:#3a1a18;
+  --track:#26303b; --sheet:#0e1829; --sheet-line:#1a2740; --steel:#c3ccd9; --steel-2:#6f7d93; --btn:#5c9df0; --btn-ink:#071327; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
+.gut{max-width:1220px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{padding-block:20px 48px;display:grid;gap:20px}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;letter-spacing:.01em;margin:0;text-wrap:balance}
+h2{font-size:1.4rem;line-height:1.1}
+h3{font-size:1.05rem}
+.eyebrow{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.hint{font-size:.76rem;color:var(--muted)}
+:focus-visible{outline:2px solid var(--input);outline-offset:2px}
+button{font-family:inherit}
+button.link{all:unset;cursor:pointer;color:var(--input);font-size:.78rem;text-decoration:underline}
+button.link:focus-visible{outline:2px solid var(--input);outline-offset:2px}
+
+/* ---- brand band ---- */
+.brand{color:var(--on-navy);position:relative;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='56'%3E%3Cpath d='M0 4h96M0 52h96M0 52L48 4l48 48M48 4v48' fill='none' stroke='%23c3cad4' stroke-opacity='.07' stroke-width='2'/%3E%3C/svg%3E") 0 0/96px 56px,
+    linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 100%)}
+.brand::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--silver-lo),var(--silver-hi) 30%,var(--silver) 55%,var(--silver-hi) 75%,var(--silver-lo))}
+.brand-in{padding-block:20px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:16px 22px}
+.brand img{width:62px;height:auto;flex:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
+.brand-txt{flex:1;min-width:0;display:grid;gap:4px}
+.wordmark{font-family:var(--f-display);font-weight:800;letter-spacing:.18em;font-size:.95rem;color:#eef1f5;text-transform:uppercase}
+.wordmark span{color:var(--on-navy-muted);font-weight:500;letter-spacing:.12em}
+.brand h1{color:#fff;font-size:2.3rem;line-height:1.02}
+.brand p{margin:2px 0 0;color:var(--on-navy-muted);max-width:64ch}
+.brand-side{display:grid;gap:6px;justify-items:end;text-align:right}
+.tagline{font-family:var(--f-display);font-style:italic;font-weight:500;font-size:1.08rem;color:#eef1f5}
+.think{font-family:var(--f-display);font-weight:800;letter-spacing:.14em;font-size:.8rem;color:#0b1d3a;background:linear-gradient(180deg,#eef1f5,#c3cad4);padding:3px 10px;border-radius:3px}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding-block:0 22px;margin:0}
+.facts div{padding:10px 16px 0 0;border-top:1px solid rgba(195,202,212,.28);display:grid;gap:1px;min-width:0}
+.facts dt{font-family:var(--f-display);font-weight:700;font-size:1.35rem;color:#fff;letter-spacing:.02em;line-height:1.1}
+.facts dd{margin:0;font-size:.74rem;color:var(--on-navy-muted)}
+@media (max-width:760px){.brand-side{justify-items:start;text-align:left}.brand h1{font-size:1.8rem}.facts{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:10px}}
+
+/* ---- panels ---- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:16px;min-width:0;align-content:start}
+.sec-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.step{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--input);color:var(--surface);font:700 .8rem var(--f-display);margin-right:8px;vertical-align:2px}
+
+/* ---- truss picker ---- */
+.picker{display:grid;gap:12px}
+.sys-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px}
+.sys-list button{display:grid;grid-template-columns:38px minmax(0,1fr);column-gap:10px;align-items:center;text-align:left;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;min-height:54px;transition:border-color .15s,background .15s}
+.sys-list button:hover{border-color:var(--input)}
+.sys-list svg{grid-row:1/3;width:38px;height:38px;display:block}
+.sys-list .nm{font-family:var(--f-display);font-size:1.08rem;font-weight:600;line-height:1.1;overflow-wrap:anywhere}
+.sys-list .sub{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sys-list .ic-f{fill:none;stroke:var(--steel-2);stroke-width:1.4}
+.sys-list .ic-c{fill:var(--surface);stroke:var(--steel);stroke-width:1.6}
+.sys-list button[aria-pressed="true"]{background:var(--input);border-color:var(--input);color:var(--surface)}
+.sys-list button[aria-pressed="true"] .sub{color:color-mix(in srgb,var(--surface) 82%,transparent)}
+.sys-list button[aria-pressed="true"] .ic-f{stroke:color-mix(in srgb,var(--surface) 70%,transparent)}
+.sys-list button[aria-pressed="true"] .ic-c{fill:var(--input);stroke:var(--surface)}
+@media (max-width:640px){
+  .sys-list{grid-template-columns:none;grid-template-rows:repeat(2,auto);grid-auto-flow:column;grid-auto-columns:176px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x proximity}
+  .sys-list button{scroll-snap-align:start}
+}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;color:var(--muted);font:600 .78rem var(--f-body);padding:7px 12px;cursor:pointer;min-height:34px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--input-soft);color:var(--input-ink)}
+.orient{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+
+/* ---- main two columns ---- */
+.main{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+.inputs{background:var(--input-soft);border:1px solid color-mix(in srgb,var(--input) 30%,transparent);border-radius:10px;padding:18px;display:grid;gap:16px;align-content:start}
+.inputs h2{color:var(--input-ink)}
+.field{display:grid;gap:6px;min-width:0}
+.field label,.field .lbl{font-size:.8rem;font-weight:600;color:var(--input-ink)}
+.row{display:flex;gap:10px;align-items:center}
+input[type=range]{flex:1;min-width:0;accent-color:var(--input)}
+.inbox{display:flex;align-items:center;border:1px solid color-mix(in srgb,var(--input) 40%,transparent);background:var(--surface);border-radius:6px;overflow:hidden}
+.inbox input{border:0;background:transparent;color:var(--ink);font-family:var(--f-mono);font-size:.95rem;padding:8px 8px;width:100%;min-width:0}
+.inbox input:focus-visible{outline:none}
+.inbox:focus-within{outline:2px solid var(--input);outline-offset:1px}
+.inbox span{font-size:.75rem;color:var(--muted);padding-right:8px;white-space:nowrap}
+.inbox.small{width:124px;flex:none}
+.inbox .pic{flex:none;width:34px;height:24px;margin-left:6px}
+.pic line,.pic path{stroke:var(--input);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.pic .bm{stroke:var(--steel);stroke-width:2}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sublbl{font-size:.72rem!important;font-weight:500!important;color:var(--muted)!important}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chips button{border:1px solid color-mix(in srgb,var(--input) 35%,transparent);background:var(--surface);color:var(--input-ink);font:500 .74rem var(--f-mono);padding:4px 8px;border-radius:999px;cursor:pointer;min-height:28px}
+.chips button:hover{border-color:var(--input)}
+.chips button[aria-pressed="true"]{background:var(--input);border-color:var(--input);color:var(--surface)}
+.makeup{font-size:.78rem;color:var(--input-ink);background:var(--surface);border:1px dashed color-mix(in srgb,var(--input) 40%,transparent);border-radius:6px;padding:7px 9px;display:grid;gap:1px}
+.makeup b{font-family:var(--f-mono);font-weight:500}
+.makeup span{color:var(--muted);font-size:.72rem}
+.dl-main{display:grid;gap:8px;border-top:1px solid color-mix(in srgb,var(--input) 25%,transparent);padding-top:14px}
+.dl-btn{display:inline-flex;align-items:center;gap:6px;font:600 .82rem var(--f-body);padding:8px 12px;border-radius:6px;border:1px solid var(--input);background:var(--input);color:var(--surface);cursor:pointer;min-height:36px}
+.dl-btn svg{width:15px;height:15px}
+.dl-btn.ghost{background:transparent;color:var(--input)}
+.dl-btn:hover{filter:brightness(1.08)}
+.dl-btn[disabled]{opacity:.55;cursor:progress}
+.dl-btn.big{justify-content:center;width:100%;font-size:.95rem;padding:12px 14px;min-height:46px;background:var(--btn);border-color:var(--btn);color:var(--btn-ink)}
+.dl-btn.big svg{width:18px;height:18px}
+.dl-row{display:flex;gap:8px;align-items:center}
+.dl-msg{font-size:.78rem;color:var(--muted)}
+.dl-msg:empty{display:none}
+.dl-msg.bad{color:var(--bad)}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:.78rem;color:var(--input-ink);cursor:pointer}
+.chk input{accent-color:var(--input);margin-top:2px;flex:none}
+
+/* ---- results ---- */
+.status{display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between}
+.pill{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:.06em;text-transform:uppercase;padding:5px 14px;border-radius:999px}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.sheet{background:
+    linear-gradient(var(--sheet-line) 1px,transparent 1px) 0 0/100% 20px,
+    linear-gradient(90deg,var(--sheet-line) 1px,transparent 1px) 0 0/20px 100%,
+    var(--sheet);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.span-wrap{overflow-x:auto}
+.span-wrap svg{display:block;width:100%;min-width:560px;height:auto}
+.sd text{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+.sd .t-ink{fill:var(--ink);font-weight:500}
+.sd .t-load{fill:var(--input);font-weight:500}
+.sd .t-ttl{font-family:var(--f-display);font-size:13px;letter-spacing:.1em;fill:var(--muted);font-weight:600}
+.sd .ch{fill:none;stroke:var(--steel);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.sd .br{fill:none;stroke:var(--steel-2);stroke-width:1.3;stroke-linecap:round}
+.sd .ch.warn,.sd .br.warn{stroke:var(--warn)} .sd .ch.bad,.sd .br.bad{stroke:var(--bad)}
+.sd .ghost{stroke:var(--g-defl);stroke-width:1;stroke-dasharray:4 4;fill:none}
+.sd .ld{stroke:var(--input);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.sd .ld-f{fill:var(--input);stroke:none}
+.sd .udl-band{fill:var(--input);opacity:.1}
+.sd .sup{fill:var(--surface);stroke:var(--ink);stroke-width:1.6;stroke-linejoin:round}
+.sd .gnd{stroke:var(--ink);stroke-width:1.6;stroke-linecap:round}
+.sd .dim{stroke:var(--muted);stroke-width:1;fill:none}
+.sd .lblbg{fill:var(--sheet)}
+
+.perm{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:1040px){.perm{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.perm>div{background:var(--surface-2);border-radius:8px;padding:10px 12px 12px;display:grid;gap:2px;min-width:0;align-content:start}
+.perm .hd{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.perm .pic{width:36px;height:22px;flex:none}
+.perm .v{font-family:var(--f-display);font-size:2.2rem;font-weight:600;line-height:1}
+.perm .v small{font-size:.85rem;color:var(--muted);font-weight:500;margin-left:4px}
+.perm .s{color:var(--muted);font-size:.76rem}
+.perm .s b{font-weight:600}
+.perm .dfl{font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+
+.util{display:grid;grid-template-columns:190px minmax(0,1fr);gap:8px 22px;align-items:center}
+@media (max-width:560px){.util{grid-template-columns:minmax(0,1fr)}}
+.gauge{display:grid;justify-items:center;gap:2px}
+.gauge svg{width:180px;max-width:100%;height:auto;display:block}
+.gauge .trk{fill:none;stroke:var(--track);stroke-width:12;stroke-linecap:round}
+.gauge .val{fill:none;stroke-width:12;stroke-linecap:round;stroke:var(--ok);transition:stroke-dasharray .3s}
+.gauge .val.warn{stroke:var(--warn)} .gauge .val.bad{stroke:var(--bad)}
+.gauge .tick{stroke:var(--ink);stroke-width:2}
+.gauge .gv{font-family:var(--f-display);font-size:30px;font-weight:600;fill:var(--ink)}
+.gauge .gl{font-family:var(--f-mono);font-size:9px;fill:var(--muted)}
+.gauge p{margin:0;font-size:.76rem;color:var(--muted);text-align:center}
+@media (prefers-reduced-motion:reduce){.gauge .val,.bar i,.sys-list button{transition:none}}
+.checks{display:grid;gap:10px}
+.check{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;align-items:baseline}
+.check .t{font-weight:500}
+.check .r{font-family:var(--f-mono);font-size:.82rem;color:var(--muted);text-align:right}
+.check.total .t{font-weight:600}
+.bar{grid-column:1/-1;height:8px;background:var(--track);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px;background:var(--ok);transition:width .25s}
+.bar i.warn{background:var(--warn)} .bar i.bad{background:var(--bad)}
+.tag{font-family:var(--f-body);font-size:.72rem;font-weight:600;padding:2px 7px;border-radius:999px;white-space:nowrap}
+.tag.ok{background:var(--ok-soft);color:var(--ok)} .tag.bad{background:var(--bad-soft);color:var(--bad)} .tag.warn{background:var(--warn-soft);color:var(--warn)}
+.tag:empty{display:none}
+
+.dstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.dstats div{padding:9px 12px;display:grid;gap:1px;border-left:1px solid var(--line);min-width:0}
+.dstats div:first-child{border-left:0}
+.dstats dt{font-size:.7rem;color:var(--muted)}
+.dstats dd{margin:0;font-family:var(--f-mono);font-size:1rem;font-weight:500}
+.dstats dd small{font-size:.72rem;color:var(--muted);font-weight:400}
+.dstats .bad dd{color:var(--bad)}
+@media (max-width:560px){.dstats{grid-template-columns:repeat(2,minmax(0,1fr))}.dstats div:nth-child(3){border-left:0}.dstats div:nth-child(n+3){border-top:1px solid var(--line)}}
+.warnline{color:var(--bad);font-weight:600;font-size:.82rem;margin:0}
+
+.kgsum{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:14px}
+.kg-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 24px}
+@media (max-width:640px){.kg-grid{grid-template-columns:minmax(0,1fr)}}
+.kg-list{margin:0;display:grid;align-content:start}
+.kg-list div{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid var(--line);font-size:.86rem}
+.kg-list dt{color:var(--muted);min-width:0}
+.kg-list dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.kg-list .hi{background:var(--input-soft);padding-inline:6px;border-radius:4px}
+.kg-list .hi dt,.kg-list .hi dd{color:var(--input-ink);font-weight:600}
+.kg-list .bad dd{color:var(--bad);font-weight:600}
+
+/* ---- truss details ---- */
+.details{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:980px){.details{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:12px;min-width:0;align-content:start}
+.dwg{display:grid;gap:0}
+.dwg svg{display:block;width:100%;height:auto}
+.dwg figcaption{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 10px 0}
+.dwg figure{margin:0}
+.dwg figure+figure{border-top:1px solid var(--line)}
+.dw text{font-family:var(--f-mono);font-size:10px;fill:var(--muted)}
+.dw .t-ink{fill:var(--ink);font-weight:500}
+.dw .ch{fill:var(--surface);stroke:var(--steel);stroke-width:2}
+.dw .chl{stroke:var(--steel);stroke-width:3;stroke-linecap:round;fill:none}
+.dw .fr{stroke:var(--steel-2);stroke-width:1.6;fill:none;stroke-linecap:round}
+.dw .fr.open{stroke-dasharray:4 3}
+.dw .dim{stroke:var(--muted);stroke-width:.9;fill:none}
+.dw .con{fill:var(--steel-2);stroke:none}
+dl.specs{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin:0}
+dl.specs div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+dl.specs dt{color:var(--muted);flex:none} dl.specs dd{margin:0;font-size:.86rem;font-weight:500;text-align:right;min-width:0;overflow-wrap:anywhere}
+dl.specs dd sub{font-size:.7em}
+.mods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mods div{background:var(--surface-2);border-radius:6px;padding:8px 10px;display:grid;gap:0}
+.mods dt{font-size:.7rem;color:var(--muted)}
+.mods dd{margin:0;font-family:var(--f-mono);font-size:.92rem;font-weight:500}
+.notes{font-size:.82rem;color:var(--muted);display:grid;gap:5px;padding-left:18px;margin:0;list-style:disc}
+.notes b{color:var(--ink);font-weight:600}
+
+/* ---- charts ---- */
+.charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+@media (max-width:900px){.charts{grid-template-columns:minmax(0,1fr)}}
+.chart{display:grid;gap:4px;min-width:0}
+.chart svg{width:100%;height:auto;display:block;cursor:crosshair}
+.chart text{font-family:var(--f-mono);font-size:10px;fill:var(--muted)}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .ar{fill:var(--input);opacity:.1}
+.chart .mk{fill:var(--surface);stroke:var(--input);stroke-width:2.5}
+.chart .ml{stroke:var(--ink);stroke-dasharray:3 3;stroke-width:1}
+.chart .mt{fill:var(--ink);font-weight:500}
+.chart .seg{stroke:var(--gc);stroke-width:2.5;stroke-linecap:round}
+.chart .lim{stroke:var(--bad);stroke-width:1.3;stroke-dasharray:5 4;fill:none}
+.chart .sw{stroke:var(--g-defl);stroke-width:1.5;fill:none}
+.chart .dl{stroke:var(--input);stroke-width:2.5;fill:none;stroke-linejoin:round}
+.g-chord{--gc:var(--g-chord)} .g-spigot{--gc:var(--g-spigot)} .g-brace{--gc:var(--g-brace)} .g-joint{--gc:var(--g-joint)} .g-defl{--gc:var(--g-defl)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.75rem;color:var(--muted)}
+.legend .dot{display:inline-block;width:14px;height:3px;border-radius:2px;background:var(--gc,var(--input));margin-right:6px;vertical-align:middle}
+.legend .dot.lim{background:repeating-linear-gradient(90deg,var(--bad) 0 4px,transparent 4px 7px)}
+
+/* ---- tables ---- */
+.grid2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;max-height:480px;overflow-y:auto}
+.tbl.flat{max-height:none}
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+th,td{padding:7px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{position:sticky;top:0;background:var(--surface-2);font-weight:600;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;z-index:1}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+tr.cur td{background:var(--input-soft)!important;color:var(--input-ink);font-weight:500}
+td.na{color:var(--muted)}
+td.gov{font-family:var(--f-body);font-size:.78rem;font-weight:600;color:var(--gc)}
+td.lim{color:var(--muted)}
+.ftc{color:var(--muted);font-size:.75rem;margin-left:4px}
+.mini{display:block;height:3px;border-radius:2px;background:var(--track);margin-top:3px;overflow:hidden}
+.mini i{display:block;height:100%;background:var(--input);border-radius:2px}
+#cmpTable td:first-child{font-family:var(--f-body);font-weight:500}
+table.kgt td:nth-child(2){font-family:var(--f-body);color:var(--muted);font-size:.8rem}
+table.kgt td:first-child{font-family:var(--f-body);font-weight:500}
+table.kgt tr.zero td{color:var(--muted)}
+table.kgt tbody tr{cursor:default}
+table.kgt tfoot td{font-family:var(--f-body);font-size:.8rem;color:var(--muted);text-align:left;border-bottom:1px solid var(--line)}
+table.kgt tfoot tr:last-child td{border-bottom:0}
+table.kgt tfoot td:nth-child(2){text-align:right;font-family:var(--f-mono);color:var(--ink);font-size:.85rem}
+table.kgt tfoot tr.sum td{color:var(--ink);font-weight:600}
+table.kgt tfoot b{color:var(--input-ink)}
+
+.basis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+@media (max-width:900px){.basis{grid-template-columns:minmax(0,1fr)}}
+.basis h3{margin-bottom:6px}
+.basis sub{font-size:.7em}
+footer{font-size:.78rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.contact{display:grid;gap:2px;font-size:.8rem;color:var(--muted);text-align:center;padding-block:8px}
+.contact strong{color:var(--ink);font-family:var(--f-display);letter-spacing:.08em;text-transform:uppercase;font-size:.95rem}
+
+.pdfview{position:fixed;inset:0;z-index:50;background:rgba(8,16,30,.6);display:grid;place-items:center;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px))}
+.pdfview-card{background:var(--surface);border-radius:10px;width:min(900px,100%);height:min(92vh,1100px);display:grid;grid-template-rows:auto 1fr auto;gap:10px;padding:14px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.pdfview-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0}
+.pdfview-bar strong{font-family:var(--f-display);font-size:1.1rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pdfview iframe{width:100%;height:100%;border:1px solid var(--line);border-radius:6px;background:#fff}
+.pdfview p{margin:0}
+[hidden]{display:none!important}
+</style>
+
+<header class="brand">
+  <div class="brand-in gut">
+    <img src="data:image/png;base64,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b779Fjt3bmfYsGE8++yztGjRAoCysjL+/ve/H3nrrbf+curUqRn/F4E22Wy2626+8ea/3H3P3Wnp9dKDaq2UF194mffffxezxcoll17GiJGXU1NTw4EDBwABi8WMw26noryMBfPnsXv3Tho3bsq4a8bTrl0bHHbbQsMw/tqrV6+tv/VFr1ixIlMQhL96vd6xxcXF0rJly1m0aBFVVZX06N6LRx56hMaNm1BZWYGqqNS6azHJMqqhM/WrqXw59XNkSeKxxx7j5ptvxmYL8BnWrVvHhx9++MXnn3/+KHDy/wrQbXr27PncPXffM2jYpcMA0HWDxYsX8+CDD7J//z7ate/E+AnXUj8rm3379uByVWOxWLDbrBiGzqaN61iyeBGCIHDJJZcyavRo4uNiT0qS+JIsy1N+Kyn+qbVy5UpZFMXRhmHc7/F4Wu/Zs4+pU6eyc+d27PYIbr/tDsZcNQZREHDX1OJXFdx+H9Ex0RwrKODdd95m7drV9O7dm5deeoX27QNsperqaiZPnnzqvffee/zIkSNf/J6Blt8baGf9+vUfuv3222+bOHFiZExMDACHDh7iyaeeYtq06cTExnLVmKvp2SufEyeOU1xcgizLWCyBwMfpk8eZNXMGp0+folOnTlx11VU0adxEsdqsXwNP9+rV68h/SiWtX78+Udf1O30+360lJaVR3323knnz5lJaWkKrlm24/777ademLa6aGnyaiuL3ExERgYHBzBnT+fTvf8fn83Pfvfdx1913EBXlBGD79u28884733zyySePADv+24DuM+qKUS889NBDuW3bBe5gv8/HZ599zmOPP05RUSGdOnfjhptuweGws337dnw+H3abHZvdhqoorFq5jDWrV5GQkMBVV15Fv/79iIyM3Aa8XFJSMmvUqFF/SKhx1apV+YZhPOnxenscOnSEmTNmsn79GgRBZOKEa7np5lswWSxUV1ejKAo+nw+LxUxhYSFTPp7CihXL6NixA6+88jLdu3cDwOfz8eWXX1a+++67z3///fevA/4/O9CprVu1+sttt99+3dVXX222WgMM2i2bN/PoY4+xbNkyklNSuXLMNXTv3oPDhw5x6tRJrDYbdrsds9nC4UMHWbJoHpWVFfTv35/LR15O/fqZ5Saz+XWTyfROXl5e+R/t+C9btizKbDbf4Pf776morE5evXo18+bO4cyZ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8sorue222zCbzbjdbmw2Gxs2bODFF1/k6NGjTJgwgcmTP8ZVVcmMmTNp2rQp3bt3Z926dQwePJiYmBjuv/9+euf3pqKiHEEUsVmtzJ4zh/fff58mTZowadIksrKyzgMvS5L0Yffu3Sv+W/btv7JD87Jly+IsFsttiqLcWlVZlbB8xXKmT59OXFwcjz32GF26dKG8PJDcctfW8trrr3Pk6FEefOABCgsLefvttwNUnXHj+H77dk6cOMHNN91EZGQkfr9CbFwsxwoKeO755ykoKGD8+PH069cPu92+1jCMR3v27Lnmv23P/qtbca9evbqjrutPumtrB54+c0aYPXs269ato0+fPtx2220kJydTWlqK1+vlvffeRRACnPKjR49iNpupn1kfj9fDqFGjiI+PD/DHbXamfjWVr776irZt2zJ27FgyMzPPy7L8OvDOf5MU/58BOmisWWVZHqNp2v1VVVVN1qxZw7Rp06itdXP//fczcuQIzp49y44dO1gwfz5p6en06tWL4uJilixZQtMmTRkyZDApKakcOXqE5597jiqXiwkTJoR4W98JgvBkt27d1v4379P/meb6K1eurC8IwnO1tbWjz549K36z5Bu+XfYt7dq14/HHH8dsNrN582Z27NhBRUUFhmGQnpZO7z69yczIZMrfP2H69Bl069qNq8ddTWpqapEoii9pmvbRHx2+/B/QP1jTp083Jycnj1VV9T63291s967dTJv+NQXHjjP+mmsYNWoUBQUFHD9+HFEUad26NRXlFbz00osoqsqECRPokJur2x2OuSaT6dm8vLzt/1f25v/kuIzly5enmUyme9xu9w2lpaURy5cvZ+HChaSlpXHXXXeRnZ2Nu9bNV19/xbx58+jbty9jrhpDfEL8SVGUX46Li/moRYsW/v9Le/J/ei7KypUr+6qq+lB1dXX+sYJj4ty5c9mxcwf16tXD5XLhcDi4cvSV5HXJ8zkiHV/ruv7snzF8+T+gf8VavHix026336eq6sOnTp2St2zZwtq1a2nYsCGjrhhFvYx6PuBBVVXf+b15W3/k+n8quIppNm12OAAAAABJRU5ErkJggg==" alt="Vardaman Safetech emblem">
+    <div class="brand-txt">
+      <div class="wordmark">Vardaman Safetech <span>· AL 6082-T6 · Eurocode 9</span></div>
+      <h1>Vardaman Truss Load Calculator</h1>
+      <p>Pick a Vardaman box truss and a span. Maximum loads and deflection are calculated from our fabrication drawings to EN 1999 and EN 17115, and your own loads are checked against every part of the truss.</p>
+    </div>
+    <div class="brand-side">
+      <span class="tagline">Shaping Structures, Securing Lives</span>
+      <span class="think">THINK10X</span>
+    </div>
+  </div>
+  <dl class="facts gut">
+    <div><dt id="fCount">15 box trusses</dt><dd>300 × 300 up to 1100 × 650</dd></div>
+    <div><dt>Spans to 140 ft</dt><dd>2 m to 42.7 m, simply supported</dd></div>
+    <div><dt>5 checks per load</dt><dd>Chords, spigot joint, braces, welds, deflection</dd></div>
+    <div><dt>EN 1999 · EN 17115</dt><dd>Factors 1.35 / 1.5, dynamic 1.2, limit L/200</dd></div>
+  </dl>
+</header>
+
+<div class="wrap gut">
+  <section class="panel picker">
+    <div class="sec-head"><h2><span class="step">1</span>Choose the truss</h2><span class="hint">Section drawn to scale · chord tube · weight per metre</span></div>
+    <div class="sys-list" id="sysGrid" role="group" aria-label="Truss"></div>
+    <div class="orient" id="orientRow" hidden>
+      <span class="eyebrow">Which face is upright</span>
+      <div class="seg" id="orientSeg" role="group" aria-label="Orientation">
+        <button type="button" data-side="0" id="orUp">1100 up</button>
+        <button type="button" data-side="1" id="orSide">650 up</button>
+      </div>
+      <span class="hint" id="orientHint"></span>
+    </div>
+  </section>
+
+  <section class="main">
+    <form class="inputs" id="form" autocomplete="off">
+      <h2><span class="step">2</span>Span and loads</h2>
+      <div class="field">
+        <label for="spanRange">Span between supports</label>
+        <div class="row">
+          <input type="range" id="spanRange" min="2" max="42.7" step="0.1" value="9">
+          <div class="inbox small"><input type="number" id="span" min="2" max="42.7" step="0.1" value="9" inputmode="decimal"><span>m</span></div>
+        </div>
+        <span class="hint num" id="spanFt">29.5 ft</span>
+        <div class="chips" id="spanChips" role="group" aria-label="Span presets in feet"></div>
+        <div class="makeup" id="makeup"></div>
+      </div>
+      <div class="field">
+        <label for="udl">Uniformly distributed load (UDL)</label>
+        <div class="inbox"><svg class="pic" viewBox="0 0 34 24" aria-hidden="true"><line x1="4" y1="5" x2="30" y2="5"/><path d="M6 5v10m-2.5-3L6 15l2.5-3M14 5v10m-2.5-3L14 15l2.5-3M22 5v10m-2.5-3L22 15l2.5-3M29 5v10m-2.5-3L29 15l2.5-3"/><line class="bm" x1="2" y1="19" x2="32" y2="19"/></svg><input type="number" id="udl" min="0" step="5" value="50" inputmode="decimal"><span>kg/m</span></div>
+      </div>
+      <div class="field">
+        <label for="cpl">Centre point load (CPL)</label>
+        <div class="inbox"><svg class="pic" viewBox="0 0 34 24" aria-hidden="true"><path d="M17 3v12m-3-3.5 3 3.5 3-3.5"/><line class="bm" x1="2" y1="19" x2="32" y2="19"/></svg><input type="number" id="cpl" min="0" step="10" value="300" inputmode="decimal"><span>kg</span></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Point loads at nodes</span>
+        <div class="two">
+          <div class="field"><label for="p2" class="sublbl">2 pts at L/3</label><div class="inbox"><input type="number" id="p2" min="0" step="10" value="0" inputmode="decimal"><span>kg each</span></div></div>
+          <div class="field"><label for="p3" class="sublbl">3 pts at L/4</label><div class="inbox"><input type="number" id="p3" min="0" step="10" value="100" inputmode="decimal"><span>kg each</span></div></div>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <span class="hint">Imposed load only. Self weight, safety factors and the 1.2 dynamic factor are added by the calculation.</span>
+        <button type="button" class="link" id="reset">Reset example</button>
+      </div>
+      <div class="dl-main">
+        <button type="button" class="dl-btn big" id="dlPdfMain"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Download load chart (PDF)</button>
+        <label class="chk" for="pdfCase"><input type="checkbox" id="pdfCase"><span>Add my span and loads to the PDF, with the deflection they cause</span></label>
+        <span class="hint" id="dlMainNote">2-page data sheet: loads and deflection for the truss selected</span>
+      </div>
+    </form>
+
+    <div class="panel" aria-live="polite">
+      <div class="status">
+        <div>
+          <div class="eyebrow" id="resTitle">–</div>
+          <h2>Load check</h2>
+        </div>
+        <span class="pill ok" id="statusPill">OK</span>
+      </div>
+
+      <div class="sheet span-wrap"><svg class="sd" id="spanSvg" viewBox="0 0 760 276" role="img" aria-label="Truss span with loads, supports and deflected shape"></svg></div>
+
+      <div>
+        <div class="eyebrow" style="margin-bottom:8px">Maximum load at this span · each case on its own</div>
+        <div class="perm">
+          <div><div class="hd"><span class="eyebrow">UDL total</span><svg class="pic" viewBox="0 0 34 24" aria-hidden="true"><line x1="4" y1="5" x2="30" y2="5"/><path d="M6 5v10m-2.5-3L6 15l2.5-3M14 5v10m-2.5-3L14 15l2.5-3M22 5v10m-2.5-3L22 15l2.5-3M29 5v10m-2.5-3L29 15l2.5-3"/><line class="bm" x1="2" y1="19" x2="32" y2="19"/></svg></div><div class="v num" id="rUdl">–</div><div class="s" id="rUdlD">–</div><div class="dfl" id="rUdlF"></div></div>
+          <div><div class="hd"><span class="eyebrow">Centre point</span><svg class="pic" viewBox="0 0 34 24" aria-hidden="true"><path d="M17 3v12m-3-3.5 3 3.5 3-3.5"/><line class="bm" x1="2" y1="19" x2="32" y2="19"/></svg></div><div class="v num" id="rCpl">–</div><div class="s" id="rCplD">–</div><div class="dfl" id="rCplF"></div></div>
+          <div><div class="hd"><span class="eyebrow">2 pts at L/3</span><svg class="pic" viewBox="0 0 34 24" aria-hidden="true"><path d="M12 3v12m-3-3.5 3 3.5 3-3.5M22 3v12m-3-3.5 3 3.5 3-3.5"/><line class="bm" x1="2" y1="19" x2="32" y2="19"/></svg></div><div class="v num" id="rP2">–</div><div class="s" id="rP2D">–</div><div class="dfl" id="rP2F"></div></div>
+          <div><div class="hd"><span class="eyebrow">3 pts at L/4</span><svg class="pic" viewBox="0 0 34 24" aria-hidden="true"><path d="M9.5 3v12m-3-3.5 3 3.5 3-3.5M17 3v12m-3-3.5 3 3.5 3-3.5M24.5 3v12m-3-3.5 3 3.5 3-3.5"/><line class="bm" x1="2" y1="19" x2="32" y2="19"/></svg></div><div class="v num" id="rP3">–</div><div class="s" id="rP3D">–</div><div class="dfl" id="rP3F"></div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px">Your loads, checked together</div>
+        <div class="util">
+          <div class="gauge">
+            <svg viewBox="0 0 180 104" role="img" aria-label="Capacity used" id="gaugeSvg">
+              <path class="trk" d="M20 92A70 70 0 0 1 160 92"/>
+              <path class="val" id="gaugeVal" d="M20 92A70 70 0 0 1 160 92" stroke-dasharray="0 400"/>
+              <line class="tick" x1="143.7" y1="61" x2="159.3" y2="52"/>
+              <text class="gl" x="178" y="44" text-anchor="end">100%</text>
+              <text class="gv" id="gaugeTxt" x="90" y="88" text-anchor="middle">–</text>
+            </svg>
+            <p id="gaugeNote">of capacity used</p>
+          </div>
+          <div class="checks" id="checks"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="eyebrow" style="margin-bottom:8px">Deflection (sag) at mid span</div>
+        <dl class="dstats" id="dstats"></dl>
+        <p class="warnline" id="swWarn" hidden></p>
+      </div>
+
+      <div class="kgsum" id="kgsum" hidden>
+        <div class="eyebrow">Load summary · what you set, in kg</div>
+        <div class="tbl flat">
+          <table class="kgt">
+            <thead><tr><th>Load</th><th>You set</th><th>Total kg</th><th>Max alone</th><th>% of max</th></tr></thead>
+            <tbody id="kgRows"></tbody>
+            <tfoot id="kgFoot"></tfoot>
+          </table>
+        </div>
+        <div class="kg-grid">
+          <dl class="kg-list" id="kgLoads"></dl>
+          <dl class="kg-list" id="kgSpare"></dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sec-head"><h2 id="specTitle">Truss details</h2><span class="tag" id="specStatus"></span></div>
+    <div class="details">
+      <div class="col">
+        <div class="sheet dwg">
+          <figure><figcaption>End section</figcaption><svg class="dw" id="secSvg" viewBox="0 0 300 210" role="img" aria-label="End section with dimensions"></svg></figure>
+          <figure><figcaption>3 m module · side view</figcaption><svg class="dw" id="elevSvg" viewBox="0 0 300 118" role="img" aria-label="Side view of a 3 m module"></svg></figure>
+        </div>
+        <dl class="mods" id="mods"></dl>
+      </div>
+      <div class="col">
+        <div class="eyebrow">Specification</div>
+        <dl class="specs" id="specs"></dl>
+      </div>
+      <div class="col">
+        <div class="eyebrow">Design resistances</div>
+        <dl class="specs" id="caps"></dl>
+        <ul class="notes" id="specNotes"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sec-head"><h2>Load and deflection by span</h2><span class="hint">Click a chart to set the span</span></div>
+    <div class="charts">
+      <div class="chart"><h3>Max UDL, total (kg)</h3><svg id="chUdl" viewBox="0 0 300 190" role="img" aria-label="Maximum UDL by span"></svg></div>
+      <div class="chart"><h3>Max centre point (kg)</h3><svg id="chCpl" viewBox="0 0 300 190" role="img" aria-label="Maximum centre point load by span"></svg></div>
+      <div class="chart"><h3>Deflection at max UDL (mm)</h3><svg id="chDef" viewBox="0 0 300 190" role="img" aria-label="Deflection at maximum UDL by span, with the L/200 limit"></svg></div>
+    </div>
+    <div class="legend" id="govLegend"></div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <div class="sec-head"><h2 id="chartTitle">Load chart</h2>
+        <div class="dl-row" id="dlRow">
+          <div class="seg" id="tblSeg" role="group" aria-label="Table shows">
+            <button type="button" data-v="load" id="tbLoad">Load kg</button>
+            <button type="button" data-v="defl" id="tbDefl">Deflection mm</button>
+          </div>
+          <button type="button" class="dl-btn" id="dlPdf"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>PDF</button>
+          <button type="button" class="dl-btn ghost" id="dlCsv">CSV</button>
+        </div>
+      </div>
+      <div class="dl-msg" id="dlMsg" role="status"></div>
+      <div class="tbl">
+        <table>
+          <thead id="loadHead"></thead>
+          <tbody id="loadTable"></tbody>
+        </table>
+      </div>
+      <div class="hint" id="tblHint"></div>
+    </div>
+    <div class="panel">
+      <div class="sec-head"><h2 id="cmpTitle">All trusses at 9 m</h2><span class="hint">Click to switch</span></div>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Truss</th><th>UDL kg</th><th>Centre kg</th><th>Your loads</th></tr></thead>
+          <tbody id="cmpTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>How the loads are calculated</h2>
+    <div class="basis">
+      <div>
+        <h3>Loads and material</h3>
+        <ul class="notes">
+          <li>Partial factors 1.35 on self weight and 1.5 on imposed load, with a dynamic factor of 1.2 for motor-hoisted trusses, as used in EN 17115.</li>
+          <li>AL 6082-T6 tube: f<sub>o</sub> 250, f<sub>u</sub> 290 MPa. Welded zones: f<sub>o,haz</sub> 125, f<sub>u,haz</sub> 185 MPa (EN 1999-1-1 Table 3.2b). γ<sub>M1</sub> 1.10, γ<sub>M2</sub> 1.25.</li>
+          <li>Simply supported single span. Point loads at nodes.</li>
+          <li><b>Deflection</b>: mid-span sag under the imposed load, without safety factors, with the shear deformation of the bracing included. Limit L/200. Self-weight sag is shown separately.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>What is checked along the span</h3>
+        <ul class="notes">
+          <li><b>Chords</b>: compression with flexural buckling between nodes (class A curve) and the welded-zone section; tension at welded sections.</li>
+          <li><b>Spigot joint</b>: pin double shear, pin bearing on connector walls, spigot shear-out and net section, and the welded zone where the connector meets the chord.</li>
+          <li><b>Braces</b>: buckling and welded-zone capacity of each diagonal and post.</li>
+          <li><b>Open top face</b>: where the top face has no diagonals, the top chords are checked for buckling sideways, held only by the post and cross-tube frames (joint stiffness taken as half of fully rigid).</li>
+          <li><b>Brace welds to chord</b>: chord face yielding and punching shear (EN 1993-1-8 §7 gap K-joint, with f<sub>o,haz</sub>). Reduced where the chord is already in compression.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Taken from the drawings</h3>
+        <ul class="notes" id="dwgNotes">
+          <li>400 × 400 is X-braced (Ø25 × 3 at 45°) with Ø40 × 3 posts at 470 mm, not single diagonals.</li>
+          <li>600 × 525 side faces have Ø30 × 3 diagonals with Ø30 × 3 posts at about 940 mm; Ø50 × 3 chords on the 1, 2 and 3 m.</li>
+          <li>600 × 525 · Ø60 × 4: product chart Sheet 33. Chords 540 × 465 apart, nodes every 467 mm, top face with cross tubes only.</li>
+          <li>The 60 mm connector has a Ø50 / Ø45 stub (2.5 mm wall). Butt-welded to a Ø50 chord it is the weakest part of the joint, at 55 kN.</li>
+          <li>800 × 550: Ø60 × 4 chords at 740 × 490 centres, Ø30 × 3 diagonals and posts, from drawings H_800x550_2m and 3m.</li>
+          <li>760 × 520 (60 and 50 mm) and 800 × 610: from the product chart sheets 15, 25 and 26 (BOM, chord centres, brace angles). Their top faces have cross tubes but no diagonals.</li>
+          <li>1100 × 650 (Ø60 × 4 and Ø60 × 6): drawings VST_1100_650_1/2/3MTR, product chart Sheet 34. Chords 1040 × 590 apart, side braces Ø30 × 3 at 68.9°, bottom braces at 56.1°. The Ø60 × 6 version changes only the main tube wall.</li>
+          <li>480 × 480: weights from product chart Sheet 27; bracing assumed the same as the 490 × 490 · Ø60 × 4 until the drawing is checked.</li>
+          <li>Pin steel is not on the drawings. EN-19 (f<sub>u</sub> 850 MPa) is assumed, as listed on the product chart.</li>
+        </ul>
+      </div>
+    </div>
+    <footer>Calculated from the Vardaman fabrication drawings (Truss 400 × 400 and 600 × 525, 1–3 m; H 800 × 550, 2–3 m; VST_1100_650, 1–3 m; Pipe Connector, Spigot 40 / 60, Bullet Pin / Pin 60) and the product chart BOMs for the other trusses.</footer>
+  </section>
+
+  <section class="contact">
+    <div><strong>Vardaman Safetech</strong> · A unit of The Amar Enterprises</div>
+    <div>H 30, Udhyog Vihar, Sukher, Udaipur, Rajasthan</div>
+    <div class="num">+91 91191 32686 · Sales@vardamansafetech.com · @vardamansafetech</div>
+  </section>
+</div>
+
+<div class="pdfview" id="pdfView" hidden role="dialog" aria-modal="true" aria-labelledby="pdfViewName">
+  <div class="pdfview-card">
+    <div class="pdfview-bar"><strong id="pdfViewName">Load chart</strong><button type="button" class="dl-btn ghost" id="pdfViewClose">Close</button></div>
+    <iframe id="pdfFrame" title="Load chart PDF preview"></iframe>
+    <p class="hint">This app can't save files straight from the page. Use the download button in the preview above, or open the calculator in a web browser at claude.ai to save it directly.</p>
+  </div>
+</div>
+<script src="libs/three.min.js"></script>
+<script src="libs/jspdf.umd.min.js"></script>
+<script src="libs/jspdf.plugin.autotable.min.js"></script>
+<script>
+// Vardaman box truss engine — EN 1999-1-1 members, EN 1993-1-8 §7 CHS joints (fo,haz in place of fy), EN 17115 load factors.
+// Units: N, mm, MPa unless stated.
+const MAT = {E:70000, fo:250, fu:290, fohaz:125, fuhaz:185, gM1:1.10, gM2:1.25, gMw:1.25, gMp:1.25,
+             pin_fu:850, gG:1.35, gQ:1.5, dyn:1.2, defl:200};
+const PI = Math.PI;
+const tubeA = (D,t)=>PI*(D-t)*t;
+const tubeI = (D,t)=>PI/64*(D**4-(D-2*t)**4);
+const tubei = (D,t)=>Math.sqrt(D*D+(D-2*t)**2)/4;
+
+// EN 1999-1-1 flexural buckling, class A (6082-T6): alpha 0.20, lambda0 0.10
+function chi(L,D,t){
+  const lb = (L/tubei(D,t))/PI*Math.sqrt(MAT.fo/MAT.E);
+  const ph = 0.5*(1+0.20*(lb-0.10)+lb*lb);
+  return Math.min(1, 1/(ph+Math.sqrt(ph*ph-lb*lb)));
+}
+// compression resistance of a welded tube member (HAZ at nodes governs section; buckling between nodes)
+function Nc(L,D,t){
+  const A=tubeA(D,t);
+  return Math.min(A*MAT.fohaz/MAT.gM1, chi(L,D,t)*A*MAT.fo/MAT.gM1);
+}
+const Nt = (D,t)=>tubeA(D,t)*MAT.fuhaz/MAT.gM2;   // tension at welded section
+
+// Spigot joint (pin through connector walls + solid spigot). Returns {cap, parts}
+function spigotJoint(j){
+  const Apin = PI*j.pinMin**2/4;
+  const pinShear = 2*0.6*Apin*MAT.pin_fu/MAT.gMp;                      // double shear, smaller plane
+  const conBear  = 2*1.5*j.wall*j.pinMin*MAT.fo/MAT.gMp;               // two connector walls, smaller hole side
+  const dav = (j.pinMin+j.pinMax)/2, R=j.spD/2;
+  const w = 2*Math.sqrt(R*R-(dav/2)**2);
+  const spTear = 2*w*(j.e1-dav/2)*MAT.fu/Math.sqrt(3)/MAT.gM2;         // spigot shear-out to end
+  const spNet  = 0.9*(PI*R*R - j.spD*dav)*MAT.fu/MAT.gM2;              // spigot net section
+  const conTear = 4*(j.e1con-dav/2)*j.wall*MAT.fu/Math.sqrt(3)/MAT.gM2; // connector shear-out to face
+  const weld = j.weldA*MAT.fuhaz/MAT.gM2;                              // HAZ where connector meets chord
+  const parts = {pinShear, conBear, spTear, spNet, conTear, weld};
+  let key="pinShear"; for(const k in parts) if(parts[k]<parts[key]) key=k;
+  return {cap:parts[key], gov:key, parts};
+}
+
+// CHS gap K-joint, chord plastification and punching shear (EN 1993-1-8 Table 7.2), fo,haz for fy0
+function jointCap(T, kp){
+  const {D,t}=T.chord, d=T.diag.d, s=T.sin;
+  const g = D/(2*t);
+  const kg = g**0.2*(1+0.024*g**1.2/(1+Math.exp(0.5*T.gap/t-1.33)));
+  const plast = kg*kp*MAT.fohaz*t*t*(1.8+10.2*d/D)/s/MAT.gMw;
+  const punch = MAT.fohaz/Math.sqrt(3)*t*PI*d*(1+s)/(2*s*s)/MAT.gMw;
+  return {plast, punch};
+}
+
+function build(T){
+  const {D,t}=T.chord, A=tubeA(D,t), z=T.z;
+  const I = 4*(A*(z/2)**2 + tubeI(D,t));
+  const Ad = tubeA(T.diag.d,T.diag.t);
+  const cos2 = 1-T.sin*T.sin;
+  const S = 2*T.nD*MAT.E*Ad*T.sin*cos2;                 // shear stiffness of the two vertical faces
+  let NcChord = Nc(T.panel,D,t), lat=null;
+  if(T.uframe){
+    // Top face has no diagonals: compression chords held sideways only by post + cross-tube portal frames
+    // (beam on elastic springs, Ncr = 2*sqrt(c*EI)); joint rigidity factor allows for welded tube joints not being fully rigid.
+    const u=T.uframe, Ip=tubeI(u.post.d,u.post.t), Ic=tubeI(u.cross.d,u.cross.t);
+    const k=(Ic/u.b)/(Ip/u.h);
+    const Kframe=24*MAT.E*Ip/u.h**3*(6*k+1)/(6*k+4)*u.rigid;     // sway stiffness of one portal, N/mm
+    const c=Kframe/2/u.a;                                         // per chord, per mm of length
+    const EIc=MAT.E*tubeI(D,t), Ncr=Math.max(2*Math.sqrt(c*EIc), PI*PI*EIc/(u.a**2)*0);
+    const lb=Math.sqrt(tubeA(D,t)*MAT.fo/Ncr), ph=0.5*(1+0.20*(lb-0.10)+lb*lb);
+    const chiL=Math.min(1,1/(ph+Math.sqrt(ph*ph-lb*lb)));
+    const NbLat=chiL*tubeA(D,t)*MAT.fo/MAT.gM1;
+    lat={Ncr,lb,chiL,NbLat,Kframe};
+    NcChord=Math.min(NcChord,NbLat);
+  }
+  const joint = {...T.joint, ...spigotJoint(T.joint)};
+  const NtChord = Math.min(Nt(D,t), joint.cap);
+  const NdMember = Nc(T.Ld, T.diag.d, T.diag.t);
+  const NdTen = Nt(T.diag.d, T.diag.t);
+  const NpMember = T.post? Nc(T.post.L, T.post.d, T.post.t) : null;
+  const g = T.kgm*9.81/1000;                            // N/mm self weight
+  return {...T, A, I, EI:MAT.E*I, S, NcChord, lat, NtChord, NtMember:Nt(D,t), joint, NdMember, NdTen, NpMember, g,
+          MRd: 2*Math.min(NcChord,NtChord)*z};
+}
+
+// loads: {q: N/mm imposed UDL, P: N centre, F2: N each at L/3, F3: N each at L/4}
+function forces(L, loads, g, factor){
+  const pts=[];                                            // [pos, value] factored
+  const f=factor?MAT.gQ*MAT.dyn:1, fg=factor?MAT.gG:1;
+  if(loads.P) pts.push([L/2,loads.P*f]);
+  if(loads.F2) pts.push([L/3,loads.F2*f],[2*L/3,loads.F2*f]);
+  if(loads.F3) pts.push([L/4,loads.F3*f],[L/2,loads.F3*f],[3*L/4,loads.F3*f]);
+  const w = (loads.q||0)*f + g*fg;
+  const RA = w*L/2 + pts.reduce((a,[x,v])=>a+v*(L-x)/L,0);
+  return x=>{
+    let M = RA*x - w*x*x/2, V = RA - w*x;
+    for(const [p,v] of pts){ if(x>p){ M-=v*(x-p); V-=v; } }
+    return {M,V};
+  };
+}
+
+// full check of a load set; returns utilisations by criterion
+function check(B, Lm, loads){
+  const L=Lm*1000, fx=forces(L,loads,B.g,true);
+  const xs=[]; const N=240;
+  for(let i=0;i<=N;i++) xs.push(L*i/N);
+  for(const p of [L/4,L/3,L/2,2*L/3,3*L/4]) xs.push(p-1e-3,p+1e-3);
+  let uChord=0,uSpig=0,uBrace=0,uJoint=0, at={};
+  for(const x of xs){
+    const {M,V}=fx(x), Nch=Math.abs(M)/(2*B.z), Vf=Math.abs(V)/(2*B.nD*B.sin);
+    const uc=Math.max(Nch/B.NcChord, Nch/B.NtMember), us=Nch/B.joint.cap;
+    const n=Math.min(1, Nch/B.A/MAT.fohaz), kp=Math.max(0.1,1-0.3*n*(1+n));
+    const jc=jointCap(B,kp);
+    const ub=Math.max(Vf/Math.min(B.NdMember,B.NdTen), B.post? (Math.abs(V)/(2*B.nD))/B.NpMember : 0), uj=Vf/Math.min(jc.plast,jc.punch);
+    if(uc>uChord) uChord=uc; if(us>uSpig) uSpig=us;
+    if(ub>uBrace) uBrace=ub; if(uj>uJoint) uJoint=uj;
+  }
+  // deflection, characteristic imposed load only
+  const q=loads.q||0,P=loads.P||0,F2=loads.F2||0,F3=loads.F3||0, EI=B.EI, S=B.S;
+  const d = 5*q*L**4/(384*EI)+q*L*L/(8*S) + P*L**3/(48*EI)+P*L/(4*S)
+          + 23*F2*L**3/(648*EI)+F2*L/(3*S) + 19*F3*L**3/(384*EI)+F3*L/(2*S);
+  const dself = 5*B.g*L**4/(384*EI)+B.g*L*L/(8*S);
+  const uDefl = d/(L/MAT.defl);
+  const u={chord:uChord, spigot:uSpig, brace:uBrace, joint:uJoint, defl:uDefl};
+  let gov="chord"; for(const k in u) if(u[k]>u[gov]) gov=k;
+  return {u, max:u[gov], gov, defl:d, dself};
+}
+
+// rating: largest single load of a type with all utilisations <= 1
+function rate(B, Lm, type){
+  const mk=v=>type==="udl"?{q:v/(Lm*1000)}:type==="cpl"?{P:v}:type==="p2"?{F2:v}:{F3:v};
+  const c0=check(B,Lm,mk(1));
+  if(c0.max>1) return {N:0,kg:0,gov:c0.gov,defl:0,dself:c0.dself};
+  let lo=0,hi=5e6;
+  for(let i=0;i<60;i++){const m=(lo+hi)/2; (check(B,Lm,mk(m)).max<=1?lo=m:hi=m);}
+  const c=check(B,Lm,mk(lo));
+  return {N:lo, kg:lo/9.81, gov:c.gov, defl:c.defl, dself:c.dself};
+}
+
+if(typeof module!=="undefined") module.exports={MAT,build,check,rate,spigotJoint,jointCap,Nc,Nt,tubeA,chi};
+
+// Geometry taken from the fabrication drawings (Drive: Truss 400x400_1/2/3m, Truss 525x600_1/2/3m; canvas BOMs for 300 and 490)
+const J50 = (weldA)=>({sys:"50 mm", pinMin:9.2, pinMax:11.2, wall:9.5, spD:31, e1:12.5, e1con:23, weldA,
+  text:"Pipe Connector Ø50 (bore Ø31, wall 9.5) · Spigot 40 (solid Ø31) · Bullet Pin Ø12.69→6.80"});
+const J60 = (weldA)=>({sys:"60 mm", pinMin:13.46, pinMax:16.56, wall:9.25, spD:44, e1:15.5, e1con:37.5, weldA,
+  text:"Pipe Connector 60 (Ø63.5, bore Ø45, wall 9.25) · Spigot 60 (solid Ø44) · Bullet Pin 60 Ø18.28→11.30"});
+const A = (D,t)=>Math.PI*(D-t)*t;
+const SIN = deg=>Math.sin(deg*Math.PI/180);
+
+const TRUSS_DEF = [
+  {id:"300", z:250, chord:{D:50,t:2}, diag:{d:25,t:2}, sin:Math.sin(42.5*Math.PI/180), nD:1, Ld:250/Math.sin(42.5*Math.PI/180), panel:273, gap:100, kgm:5.9, joint:J50(A(50,2))},
+  {id:"400", z:350, chord:{D:50,t:3}, diag:{d:25,t:3}, sin:Math.SQRT1_2, nD:2, Ld:350/Math.SQRT1_2, panel:470, gap:100, kgm:10.5, joint:J50(A(50,3))},
+  {id:"600-50", z:550, chord:{D:50,t:3}, diag:{d:30,t:3}, sin:500/596.18, nD:1, Ld:550/(500/596.18), panel:940, gap:100, kgm:13.1, joint:J50(A(50,3))},
+  {id:"600-60", z:550, chord:{D:50,t:3}, diag:{d:30,t:3}, sin:500/596.18, nD:1, Ld:550/(500/596.18), panel:940, gap:100, kgm:13.5, joint:J60(A(50,2.5))},
+  {id:"600-H", z:550, chord:{D:50,t:4}, diag:{d:30,t:3}, sin:500/596.18, nD:1, Ld:550/(500/596.18), panel:940, gap:100, kgm:14.9, joint:J60(A(50,2.5))},
+  {id:"600-60x4", z:540, chord:{D:60,t:4}, diag:{d:30,t:3}, sin:Math.sin(53.36*Math.PI/180), nD:1, Ld:540/Math.sin(53.36*Math.PI/180), panel:467, gap:100, kgm:14.67, joint:J60(A(60,4)),
+   post:{d:30,t:3,L:540}, uframe:{h:540,b:465,a:466.67,post:{d:30,t:3},cross:{d:30,t:3},rigid:0.5}},
+  {id:"490-4", z:430, chord:{D:60,t:4}, diag:{d:30,t:3}, sin:Math.sin(43.7*Math.PI/180), nD:1, Ld:430/Math.sin(43.7*Math.PI/180), panel:450, gap:100, kgm:13.3, joint:J60(A(60,4))},
+  {id:"490-5", z:430, chord:{D:60,t:5}, diag:{d:30,t:3}, sin:Math.sin(43.7*Math.PI/180), nD:1, Ld:430/Math.sin(43.7*Math.PI/180), panel:450, gap:100, kgm:14.9, joint:J60(A(60,5))},
+  {id:"800", z:740, chord:{D:60,t:4}, diag:{d:30,t:3}, sin:680/738.73, nD:1, Ld:740/(680/738.73), panel:920, gap:100, kgm:15.7, joint:J60(A(60,4))},
+  {id:"760-60", z:700, chord:{D:60,t:4}, diag:{d:30,t:3}, sin:Math.sin(59.8*Math.PI/180), nD:1, Ld:700/Math.sin(59.8*Math.PI/180), panel:467, gap:100, kgm:15.53, joint:J60(A(60,4)),
+   post:{d:30,t:3,L:700}, uframe:{h:700,b:460,a:466.67,post:{d:30,t:3},cross:{d:30,t:3},rigid:0.5}},
+  {id:"760-50", z:710, chord:{D:50,t:3}, diag:{d:30,t:3}, sin:Math.sin(60.6*Math.PI/180), nD:1, Ld:710/Math.sin(60.6*Math.PI/180), panel:467, gap:100, kgm:12.62, joint:J50(A(50,3)),
+   post:{d:30,t:3,L:710}, uframe:{h:710,b:470,a:466.67,post:{d:30,t:3},cross:{d:30,t:3},rigid:0.5}},
+  {id:"800-610", z:740, chord:{D:60,t:4}, diag:{d:30,t:3}, sin:740/843.5, nD:1, Ld:843.5, panel:467, gap:100, kgm:16.36, joint:J60(A(60,4)),
+   post:{d:30,t:3,L:740}, uframe:{h:740,b:550,a:466.67,post:{d:30,t:3},cross:{d:30,t:3},rigid:0.5}},
+  {id:"1100-4", z:1040, chord:{D:60,t:4}, diag:{d:30,t:3}, sin:SIN(68.88), nD:1, Ld:1040/SIN(68.88), panel:467, gap:100, kgm:18.52, joint:J60(A(60,4)),
+   post:{d:30,t:3,L:1040}, uframe:{h:1040,b:590,a:466.67,post:{d:30,t:3},cross:{d:30,t:3},rigid:0.5},
+   side:{z:590, sin:SIN(56.09), nD:0.5, Ld:590/SIN(56.09), post:{d:50,t:3,L:590}}},
+  {id:"1100-6", z:1040, chord:{D:60,t:6}, diag:{d:30,t:3}, sin:SIN(68.88), nD:1, Ld:1040/SIN(68.88), panel:467, gap:100, kgm:21.78, joint:J60(A(60,6)),
+   post:{d:30,t:3,L:1040}, uframe:{h:1040,b:590,a:466.67,post:{d:30,t:3},cross:{d:30,t:3},rigid:0.5},
+   side:{z:590, sin:SIN(56.09), nD:0.5, Ld:590/SIN(56.09), post:{d:50,t:3,L:590}}},
+  {id:"480", z:420, chord:{D:60,t:4}, diag:{d:30,t:3}, sin:Math.sin(Math.atan(420/450)), nD:1, Ld:420/Math.sin(Math.atan(420/450)), panel:450, gap:100, kgm:13.49, joint:J60(A(60,4))},
+];
+if(typeof module!=="undefined") module.exports={TRUSS_DEF};
+
+
+// ---- product data (drawings + product chart) ----
+const INFO = {
+  "300":{name:"VST 300 × 300 Light", short:"300 Light", profile:"300 × 300", bracing:"Single diagonals, no posts", chords:"Ø50 × 2", braces:"Ø25 × 2 at 42–44°",
+    part:"VST_30_3MTR", modules:[["1 m","≈7.5"],["2 m","≈12.6"],["3 m","≈17.7"]], status:"New design", maxL:42.7,
+    notes:["Best for lighting, décor and signage on spans up to 6 m.","The 50 mm connector stub (Ø43) is a loose fit in the Ø50 × 2 chord (bore Ø46). Weld fit-up needs care."]},
+  "400":{name:"VST 400 × 400", short:"400", profile:"400 × 400", bracing:"X-braced, Ø40 × 3 posts at 470 mm", chords:"Ø50 × 3", braces:"Ø25 × 3 at 45°",
+    part:"VST_40_1MTR / 2MTR / 3MTR", modules:[["1 m","12.18"],["2 m","19.63"],["3 m","31.49"]], status:"In range", maxL:42.7,
+    notes:["X-bracing in all four faces gives this truss its strong short-span shear capacity."]},
+  "600-50":{name:"VST 600 × 525 · 50 mm", short:"600×525 · 50", profile:"600 × 525 (600 deep)", bracing:"Diagonals with Ø30 posts at ≈940 mm", chords:"Ø50 × 3", braces:"Ø30 × 3 at 57°",
+    part:"VST_600_525_1_50 / 2_50 / 3_50", modules:[["1 m","15.01"],["2 m","23.07"],["3 m","39.24"]], status:"In range", maxL:42.7,
+    notes:["Rated with the 600 face vertical. Turned 90° (525 deep) it carries less.","Up to 12 m the brace welds on the 3 mm chord wall set the limit. A Ø50 × 4 chord raises it by about 65%."]},
+  "600-60":{name:"VST 600 × 525 / 535 · 60 mm", short:"600×525/535 · 60", profile:"600 × 525 / 535", bracing:"Diagonals with Ø30 posts at ≈940 mm", chords:"Ø50 × 3", braces:"Ø30 × 3 at 57°",
+    part:"VST_600_525_1MTR / 2MTR / 3MTR", modules:[["1 m","15.65 / 15.73"],["2 m","23.68 / 23.79"],["3 m","40.53 / 40.60"]], status:"In range", maxL:42.7,
+    notes:["Same frame as the 50 mm version. The heavier 60 mm hardware does not add capacity on a Ø50 × 3 chord."]},
+  "600-H":{name:"VST 600 × 535 Heavy", short:"600×535 Heavy", profile:"600 × 535", bracing:"Diagonals with Ø30 posts at ≈940 mm", chords:"Ø50 × 4", braces:"Ø30 × 3 at 57°",
+    part:"VST_600_535 (4 mm chord)", modules:[["1 m","15.73"],["2 m","26.53"],["3 m","44.80"]], status:"In range", maxL:42.7,
+    notes:["From 6 m up, the 60 mm connector stub (Ø50 / Ø45) sets the limit. A thicker stub would lift mid-span ratings by about 20%.","The 50 mm connector (Ø43 stub) does not fit a Ø50 × 4 chord (bore Ø42)."]},
+  "490-4":{name:"VST 490 × 490 · Ø60 × 4", short:"490 · Ø60×4", profile:"490 × 490", bracing:"Single diagonals, no posts", chords:"Ø60 × 4", braces:"Ø30 × 3 at 44–47°",
+    part:"VST_490_3MTR_60_4", modules:[["1 m","≈16.9"],["2 m","≈28.0"],["3 m","≈39.8"]], status:"New design", maxL:42.7,
+    notes:["The 60 mm connector stub (Ø50) is a loose fit in the Ø60 × 4 chord (bore Ø52)."]},
+  "600-60x4":{name:"VST 600 × 525 · Ø60 × 4", short:"600×525 · 60×4", profile:"600 × 525 (600 deep)", bracing:"Side diagonals + Ø30 posts every 467 mm; bottom face braced, top face open", chords:"Ø60 × 4", braces:"Ø30 × 3 at 53° (sides), 50° (bottom)",
+    part:"VST_600_525_1MTR_60x4 / 2MTR / 3MTR", modules:[["1 m","17.82"],["2 m","31.14"],["3 m","44.01"]], status:"New design", maxL:42.7,
+    notes:["Rated with the 600 face vertical (chords 540 × 465 apart).","Up to 6 m the brace welds set the limit. From about 9 m the top chords buckling sideways sets the limit, because the top face has cross tubes only.","Compared with the Ø50 × 3 600 × 525 it carries about 50% more at 6 m, for 3.5 kg more per 3 m module.","The 60 mm connector stub (Ø50) is a loose fit in the Ø60 × 4 chord (bore Ø52)."]},
+  "800":{name:"VST 800 × 550", short:"800 × 550", profile:"800 × 550 (800 deep)", bracing:"Diagonals with Ø30 posts at ≈920 mm", chords:"Ø60 × 4", braces:"Ø30 × 3 at 67° (800 face), 57° (550 face)",
+    part:"H_800x550_2m / 3m", modules:[["2 m","≈34 (calc.)"],["3 m","≈47 (calc.)"]], status:"In range", maxL:42.7,
+    notes:["Rated with the 800 face vertical (chords 740 mm apart).","Module weights are worked out from the drawing (about 15.7 kg/m); weigh a module to confirm.","The 60 mm connector stub (Ø50) is a loose fit in the Ø60 × 4 chord (bore Ø52)."]},
+  "760-60":{name:"VST 760 × 520 · 60 mm", short:"760×520 · 60", profile:"760 × 520 (760 deep)", bracing:"Side diagonals + Ø30 posts every 467 mm; bottom face braced, top face open", chords:"Ø60 × 4", braces:"Ø30 × 3 at 60°",
+    part:"VST_760_520_1MTR / 2MTR / 3MTR", modules:[["1 m","18.82"],["2 m","30.99"],["3 m","46.60"]], status:"New design", maxL:42.7,
+    notes:["Rated with the 760 face vertical. On its side only one face has diagonals, so it carries about half.","The top face has cross tubes only. From about 9 m the top chords buckling sideways sets the limit. Top-face diagonals would lift the 18 m UDL from about 1,470 to 2,420 kg.","The 60 mm connector stub (Ø50) is a loose fit in the Ø60 × 4 chord (bore Ø52)."]},
+  "760-50":{name:"VST 760 × 520 · 50 mm", short:"760×520 · 50", profile:"760 × 520 (760 deep)", bracing:"Side diagonals + Ø30 posts every 467 mm; bottom face braced, top face open", chords:"Ø50 × 3", braces:"Ø30 × 3 at 61°",
+    part:"VST_760_520_1_50 / 2_50 / 3_50", modules:[["1 m","15.21"],["2 m","24.76"],["3 m","37.87"]], status:"New design", maxL:42.7,
+    notes:["Rated with the 760 face vertical.","Up to 6 m the brace welds on the 3 mm chord wall set the limit; beyond that the top chords buckling sideways. Top-face diagonals would lift the 18 m UDL from about 940 to 1,630 kg."]},
+  "800-610":{name:"VST 800 × 610 · 60 mm", short:"800×610 · 60", profile:"800 × 610 (800 deep)", bracing:"Side diagonals + Ø30 posts every 467 mm; bottom face braced, top face open", chords:"Ø60 × 4", braces:"Ø30 × 3 at 61°",
+    part:"VST_800_610_1MTR / 2MTR / 3MTR", modules:[["1 m","20.31"],["2 m","31.68"],["3 m","49.07"]], status:"In range", maxL:42.7,
+    notes:["Rated with the 800 face vertical (chords 740 × 550 apart).","The top face has cross tubes only. From about 9 m the top chords buckling sideways sets the limit. Top-face diagonals would lift the 18 m UDL from about 1,410 to 2,560 kg.","The 60 mm connector stub (Ø50) is a loose fit in the Ø60 × 4 chord (bore Ø52)."]},
+  "1100-4":{name:"VST 1100 × 650 · Ø60 × 4", short:"1100×650 · 60×4", profile:"1100 × 650 (1100 deep)", bracing:"Side diagonals + Ø30 posts every 467 mm; bottom face braced, top face open", chords:"Ø60 × 4", braces:"Ø30 × 3 at 69° (sides), 56° (bottom)",
+    part:"VST_1100_650_1MTR / 2MTR / 3MTR", modules:[["1 m","23.25"],["2 m","35.28"],["3 m","55.56"]], status:"New design", maxL:42.7,
+    notes:["Rated with the 1100 face vertical, as drawn (chords 1040 × 590 apart). Use the switch under the truss list to rate it with the 650 face up.","Up to about 9 m the 1.05 m long Ø30 side braces buckling set the limit. From 12–15 m the top chords buckling sideways sets it, because the top face has cross tubes only.","Top-face diagonals, as in the 2 m module, would lift the 60 ft UDL from about 1,190 to 1,990 kg. Ø40 × 3 side braces would lift 3–9 m from about 2,180 to 2,670 kg.","Drawing check: the 2 m sub tube is listed Ø40 but cut for Ø30, and the vice tube cut lengths suit Ø50.","The 60 mm connector stub (Ø50) is a loose fit in the Ø60 × 4 chord (bore Ø52)."],
+    sideInfo:{name:"VST 1100 × 650 · Ø60 × 4 · 650 up", short:"1100×650 · 60×4 · 650 up", profile:"650 × 1100 (650 deep, on its side)", bracing:"One upright face braced (Ø30 diagonals, Ø50 × 3 posts); the other upright face has cross tubes only", braces:"Ø30 × 3 at 56°",
+      notes:["Rated on its side, with the 650 face vertical (chords 590 × 1040 apart).","Only one upright face has diagonals, so that face carries all the shear. The brace welds set the limit up to 18 m.","The top chords are held sideways by the braced 1100 faces, so long spans carry more than with 1100 up (60 ft UDL about 1,610 kg against 1,190 kg). Past 60 ft deflection sets the limit.","The 60 mm connector stub (Ø50) is a loose fit in the Ø60 × 4 chord (bore Ø52)."]}},
+  "1100-6":{name:"VST 1100 × 650 · Ø60 × 6", short:"1100×650 · 60×6", profile:"1100 × 650 (1100 deep)", bracing:"Side diagonals + Ø30 posts every 467 mm; bottom face braced, top face open", chords:"Ø60 × 6", braces:"Ø30 × 3 at 69° (sides), 56° (bottom)",
+    part:"VST_1100_650_1MTR / 2MTR / 3MTR with Ø60 × 6 main tubes", modules:[["1 m","26.24"],["2 m","41.66"],["3 m","65.33"]], status:"Option",  maxL:42.7,
+    notes:["Same parts and cut lengths as the Ø60 × 4 truss. Only the main tube wall changes, adding 3.26 kg/m. Module weights are the drawing weights plus the heavier main tubes.","Up to 9–12 m the side braces set the limit, so the 6 mm wall adds nothing there. From 15 m it adds about 18% (60 ft UDL 1,190 → 1,400 kg).","The VSTCON 60MM stub is Ø49.8 and will not go into a Ø60 × 6 tube (bore Ø48). Turn the stub to about Ø47.8 or use a new connector.","Top-face diagonals on the Ø60 × 4 truss give more at long spans than the 6 mm wall, for less weight."],
+    sideInfo:{name:"VST 1100 × 650 · Ø60 × 6 · 650 up", short:"1100×650 · 60×6 · 650 up", profile:"650 × 1100 (650 deep, on its side)", bracing:"One upright face braced (Ø30 diagonals, Ø50 × 3 posts); the other upright face has cross tubes only", braces:"Ø30 × 3 at 56°",
+      notes:["Rated on its side, with the 650 face vertical (chords 590 × 1040 apart).","Only one upright face has diagonals. Its braces set the limit up to about 15 m; beyond that the spigot pin does.","About 20% more UDL than the Ø60 × 4 truss on its side (60 ft 1,610 → 1,880 kg).","The VSTCON 60MM stub is Ø49.8 and will not go into a Ø60 × 6 tube (bore Ø48). Turn the stub to about Ø47.8 or use a new connector."]}},
+  "480":{name:"VST 480 × 480 · 60 mm", short:"480 · 60", profile:"480 × 480", bracing:"Single diagonals, no posts (as 490 series, assumed)", chords:"Ø60 × 4", braces:"Ø30 × 3 at about 43–46°",
+    part:"VST_480_480_1_60 / 3_60", modules:[["1 m","16.97"],["3 m","40.47"]], status:"New design", maxL:42.7,
+    notes:["Used as the pillar truss in the 60 × 60 ft ground support (product chart Sheets 27–28).","Bracing is not on the product chart. Modelled like the 490 × 490 · Ø60 × 4, which weighs within 2%; confirm against the 480 drawing.","The 60 mm connector stub (Ø50) is a loose fit in the Ø60 × 4 chord (bore Ø52)."]},
+  "490-5":{name:"VST 490 × 490 · Ø60 × 5", short:"490 · Ø60×5", profile:"490 × 490", bracing:"Single diagonals, no posts", chords:"Ø60 × 5", braces:"Ø30 × 3 at 44–47°",
+    part:"VST_490_3MTR_60", modules:[["1 m","≈18.5"],["2 m","≈31.3"],["3 m","≈44.8"]], status:"New design", maxL:42.7,
+    notes:["From 6 m up the spigot joint (pin bearing on the connector) governs, so the 5 mm chord adds little over the 4 mm one."]},
+};
+const GOV = {chord:"Chords", spigot:"Spigot joint", brace:"Braces", joint:"Brace welds", defl:"Deflection L/200"};
+const TR = TRUSS_DEF.map(T=>{
+  const base={...INFO[T.id], ...build(T)};
+  if(T.side){
+    const {side,uframe,...rest}=T;
+    base.sideV={...INFO[T.id], ...INFO[T.id].sideInfo, ...build({...rest,...side,id:T.id+"-S"}), baseId:T.id};
+  }
+  return base;
+});
+const SPANS = [2,3,4,5,6,8,9,10,12,14,15,16,18,20,21,24,27,30,33,36,39,42,42.7];
+
+const cache=new Map();
+function R(t,L,type){const k=t.id+"|"+L+"|"+type; if(!cache.has(k)) cache.set(k,rate(t,L,type)); return cache.get(k);}
+
+// ---- UI ----
+const $=id=>document.getElementById(id);
+const state={id:"600-50",side:false,tbl:"load",L:9,q:50,P:300,F2:0,F3:100};
+const fmt0=v=>v==null?"–":Math.round(v).toLocaleString("en-IN");
+const kg=r=>r.kg<50?"–":fmt0(Math.floor(r.kg/10)*10);
+const mm=v=>v<10?v.toFixed(1):v.toFixed(0);
+const ft=m=>(m*3.2808).toFixed(1)+" ft";
+const lvl=r=>r>1?"bad":r>0.85?"warn":"ok";
+const baseT=()=>TR.find(t=>t.id===state.id);
+const disp=o=>(state.side&&o.id===state.id&&o.sideV)?o.sideV:o;
+const cur=()=>disp(baseT());
+const loadsOf=()=>({q:state.q*9.81/1000, P:state.P*9.81, F2:state.F2*9.81, F3:state.F3*9.81});
+const FT_PRESETS=[20,30,40,50,60,80,100,120,140];
+
+// small end-section icon, drawn to scale between trusses
+function secIcon(t){
+  const S=SHEET[t.id], D=t.chord.D, f=d=>10+20*d/1100, w=f(S.W), h=f(S.H), x=(38-w)/2, y=(38-h)/2, r=Math.max(2.2,D/1100*20/2+1.6);
+  return `<svg viewBox="0 0 38 38" aria-hidden="true"><rect class="ic-f" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"/>`+
+    [[x,y],[x+w,y],[x,y+h],[x+w,y+h]].map(([a,b])=>`<circle class="ic-c" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="${r.toFixed(1)}"/>`).join("")+`</svg>`;
+}
+function initUI(){
+  TR.forEach(t=>{
+    const b=document.createElement("button"); b.type="button"; b.dataset.id=t.id;
+    b.innerHTML=`${secIcon(t)}<span class="nm">${t.short}</span><span class="sub">${t.chords.replace(/\s/g,"")} · ${t.kgm} kg/m</span>`;
+    b.onclick=()=>{state.id=t.id; state.side=false; render()}; $("sysGrid").appendChild(b);
+  });
+  $("fCount").textContent=TR.length+" box trusses";
+  FT_PRESETS.forEach(f=>{
+    const b=document.createElement("button"); b.type="button"; b.dataset.ft=f; b.textContent=f+" ft";
+    b.onclick=()=>setSpan(f/3.2808); $("spanChips").appendChild(b);
+  });
+}
+function readInputs(){
+  const n=v=>{const x=parseFloat(v);return isFinite(x)&&x>=0?x:0};
+  state.q=n($("udl").value); state.P=n($("cpl").value); state.F2=n($("p2").value); state.F3=n($("p3").value);
+}
+function setSpan(L){L=Math.min(42.7,Math.max(2,Math.round(L*10)/10)); state.L=L; $("span").value=L; $("spanRange").value=L; render();}
+$("spanRange").addEventListener("input",e=>setSpan(+e.target.value));
+$("span").addEventListener("change",e=>setSpan(+e.target.value||2));
+["udl","cpl","p2","p3"].forEach(id=>$(id).addEventListener("input",()=>{readInputs();render()}));
+$("form").addEventListener("submit",e=>e.preventDefault());
+$("reset").onclick=()=>{$("udl").value=50;$("cpl").value=300;$("p2").value=0;$("p3").value=100;state.id="600-50";state.side=false;readInputs();setSpan(9)};
+$("orientSeg").addEventListener("click",e=>{const b=e.target.closest("button"); if(b){state.side=b.dataset.side==="1"; render();}});
+$("tblSeg").addEventListener("click",e=>{const b=e.target.closest("button"); if(b){state.tbl=b.dataset.v; render();}});
+
+// shortest standard module make-up that covers the span
+function makeUp(t,L){
+  const mods=t.modules.map(([m,w])=>({len:parseInt(m),kg:parseFloat((String(w).match(/[\d.]+/)||[NaN])[0])})).filter(m=>m.len>0&&isFinite(m.kg)).sort((a,b)=>b.len-a.len);
+  if(!mods.length) return null;
+  for(let len=Math.ceil(L-1e-9); len<=Math.ceil(L)+3; len++){
+    const best=Array(len+1).fill(null); best[0]={n:0,parts:{}};
+    for(let i=1;i<=len;i++) for(const m of mods){
+      const p=i-m.len>=0?best[i-m.len]:null;
+      if(p && (!best[i]||p.n+1<best[i].n)) best[i]={n:p.n+1,parts:{...p.parts,[m.len]:(p.parts[m.len]||0)+1}};
+    }
+    if(best[len]){
+      const parts=mods.filter(m=>best[len].parts[m.len]).map(m=>({len:m.len,n:best[len].parts[m.len],kg:m.kg}));
+      return {len, parts, kg:parts.reduce((a,p)=>a+p.n*p.kg,0)};
+    }
+  }
+  return null;
+}
+
+// ---- live span drawing: truss, supports, loads and the deflected shape ----
+function drawSpan(t,L,ch,any,over){
+  const S=SHEET[t.id]||{}, xl=78, xr=682, w=xr-xl, yT=102, dep=Math.round(18+26*Math.min(1,t.z/1040)), yB=yT+dep;
+  const ud=any&&!over?ch.u.defl:0, sagPx=Math.min(30,15*ud);
+  const dy=x=>{const s=(x-xl)/w; return sagPx*16/5*(s-2*s**3+s**4);};
+  const n=Math.max(4,Math.min(30,Math.round(L*1000/t.panel)));
+  const cCh=any&&!over?lvl(Math.max(ch.u.chord,ch.u.spigot)):"ok", cBr=any&&!over?lvl(Math.max(ch.u.brace,ch.u.joint)):"ok";
+  const X=i=>xl+w*i/n, P=(i,top)=>`${X(i).toFixed(1)},${((top?yT:yB)+dy(X(i))).toFixed(1)}`;
+  let h=`<text class="t-ttl" x="${xl-56}" y="22">${t.short.toUpperCase()} · ${t.kgm} KG/M</text>`;
+  h+=`<text x="${xr+56}" y="22" text-anchor="end">${over?"Span is beyond this truss":any?`Deflection <tspan class="t-ink">${mm(ch.defl)} mm</tspan> · allowed ${(L*5).toFixed(0)} mm`:"No load set"}</text>`;
+  // UDL
+  if(state.q>0&&!over){
+    const yU=yT-30; let band=`M${xl},${yU}L${xr},${yU}`;
+    for(let i=n;i>=0;i--) band+=`L${X(i).toFixed(1)},${(yT+dy(X(i))-4).toFixed(1)}`;
+    h+=`<path class="udl-band" d="${band}Z"/><line class="ld" x1="${xl}" y1="${yU}" x2="${xr}" y2="${yU}"/>`;
+    for(let k=0;k<=14;k++){const x=xl+w*k/14, y=yT+dy(x)-5; h+=`<path class="ld" d="M${x.toFixed(1)},${yU}V${y.toFixed(1)}m-3,-4.5l3,4.5l3,-4.5"/>`;}
+    h+=`<text class="t-load" x="${xl}" y="${yU-8}">UDL ${fmt0(state.q)} kg/m × ${L} m = ${fmt0(state.q*L)} kg</text>`;
+  }
+  // truss
+  if(sagPx>1.2) h+=`<line class="ghost" x1="${xl}" y1="${yB}" x2="${xr}" y2="${yB}"/>`;
+  let br="";
+  for(let i=0;i<n;i++){
+    const up=i%2===0;
+    if(S.type==="x") br+=`M${P(i,0)}L${P(i+1,1)}M${P(i,1)}L${P(i+1,0)}`; else br+=`M${P(i,up?0:1)}L${P(i+1,up?1:0)}`;
+    if((S.type==="post"||S.type==="x")&&i<n-1) br+=`M${P(i+1,0)}L${P(i+1,1)}`;
+  }
+  br+=`M${P(0,0)}L${P(0,1)}M${P(n,0)}L${P(n,1)}`;
+  h+=`<path class="br ${cBr}" d="${br}"/>`;
+  for(const top of [1,0]){let d=""; for(let i=0;i<=n;i++) d+=(i?"L":"M")+P(i,top); h+=`<path class="ch ${cCh}" d="${d}"/>`;}
+  // supports and reactions
+  const tot=state.q*L+state.P+2*state.F2+3*state.F3+t.kgm*L;
+  for(const [x,roll] of [[xl,0],[xr,1]]){
+    h+=`<path class="sup" d="M${x},${yB+4}l-11,18h22z"/><line class="gnd" x1="${x-16}" y1="${yB+(roll?27:22)}" x2="${x+16}" y2="${yB+(roll?27:22)}"/>`;
+    if(roll) h+=`<circle class="sup" cx="${x-6}" cy="${yB+24.5}" r="2.2"/><circle class="sup" cx="${x+6}" cy="${yB+24.5}" r="2.2"/>`;
+    if(!over) h+=`<text class="t-ink" x="${x}" y="${yB+44}" text-anchor="middle">${fmt0(tot/2)} kg</text><text x="${x}" y="${yB+57}" text-anchor="middle">on support</text>`;
+  }
+  // point loads, hung from the bottom chord
+  if(!over){
+    const pl=new Map(), add=(f,v,k)=>{ if(v>0){const o=pl.get(f)||{v:0,k:[]}; o.v+=v; o.k.push(k); pl.set(f,o);} };
+    add(1/2,state.P,"P"); add(1/3,state.F2,"F2"); add(2/3,state.F2,"F2"); add(1/4,state.F3,"F3"); add(1/2,state.F3,"F3"); add(3/4,state.F3,"F3");
+    const stag=state.F2>0&&state.F3>0;
+    for(const [f,o] of pl){
+      const x=xl+w*f, y0=yB+dy(x)+3, y1=y0+26, low=stag&&o.k[0]==="F2";
+      h+=`<line class="ld" x1="${x}" y1="${y0.toFixed(1)}" x2="${x}" y2="${(y1-5).toFixed(1)}"/><path class="ld-f" d="M${x},${y1.toFixed(1)}l-4.5,-7h9z"/>`;
+      h+=`<text class="t-load" x="${x}" y="${(y1+14+(low?13:0)).toFixed(1)}" text-anchor="middle">${fmt0(o.v)} kg</text>`;
+    }
+  }
+  // span dimension
+  const yd=256, lab=`${L} m · ${ft(L)}`;
+  h+=`<path class="dim" d="M${xl},${yd}H${xr}M${xl},${yd-5}v10M${xr},${yd-5}v10"/><rect class="lblbg" x="${(xl+xr)/2-lab.length*3.6-6}" y="${yd-8}" width="${lab.length*7.2+12}" height="16"/><text class="t-ink" x="${(xl+xr)/2}" y="${yd+4}" text-anchor="middle">${lab}</text>`;
+  $("spanSvg").innerHTML=h;
+}
+
+// ---- end section and 3 m module side view, from the drawing dimensions ----
+function drawSection(t){
+  const S=SHEET[t.id], D=t.chord.D, sc=118/Math.max(S.H,S.W), bw=S.W*sc, bh=S.H*sc, ox=(300-bw)/2+6, oy=(176-bh)/2+4;
+  const r=Math.max(4.5,D*sc/2), i=D*sc/2, a=ox+i, b=ox+bw-i, c=oy+i, d=oy+bh-i;
+  let h=`<path class="fr" d="M${a},${c}H${b}V${d}H${a}Z"/>`;
+  for(const [x,y] of [[a,c],[b,c],[a,d],[b,d]]) h+=`<circle class="ch" cx="${x}" cy="${y}" r="${r}"/>`;
+  h+=`<path class="dim" d="M${ox},${oy+bh+13}H${ox+bw}M${ox},${oy+bh+8}v10M${ox+bw},${oy+bh+8}v10M${ox-13},${oy}V${oy+bh}M${ox-18},${oy}h10M${ox-18},${oy+bh}h10"/>`;
+  h+=`<text class="t-ink" x="${ox+bw/2}" y="${oy+bh+27}" text-anchor="middle">${S.W}</text><text class="t-ink" x="${ox-20}" y="${oy+bh/2+3}" text-anchor="end">${S.H}</text>`;
+  const ux=ox+bw+24;
+  h+=`<path class="dim" d="M${ux},${oy+bh/2+14}V${oy+bh/2-14}m-4,6l4,-6l4,6"/><text x="${ux}" y="${oy+bh/2+27}" text-anchor="middle">UP</text>`;
+  h+=`<text x="10" y="203">Chords ${t.chords} · centres ${S.H-D} × ${S.W-D}</text>`;
+  $("secSvg").innerHTML=h;
+}
+function drawElev(t){
+  const S=SHEET[t.id], n=Math.max(5,Math.min(8,Math.round(2880/S.panel))), x0=24, x1=276, w=x1-x0;
+  const dep=Math.max(20,Math.min(54,t.z/1040*54)), yT=14, yB=yT+dep, X=i=>x0+w*i/n;
+  let br="";
+  for(let i=0;i<n;i++){
+    const up=i%2===0;
+    if(S.type==="x") br+=`M${X(i)},${yB}L${X(i+1)},${yT}M${X(i)},${yT}L${X(i+1)},${yB}`; else br+=`M${X(i)},${up?yB:yT}L${X(i+1)},${up?yT:yB}`;
+    if((S.type==="post"||S.type==="x")&&i<n-1) br+=`M${X(i+1)},${yT}V${yB}`;
+  }
+  br+=`M${x0},${yT}V${yB}M${x1},${yT}V${yB}`;
+  let h=`<path class="fr" d="${br}"/><path class="chl" d="M${x0},${yT}H${x1}M${x0},${yB}H${x1}"/>`;
+  for(const y of [yT,yB]) h+=`<rect class="con" x="${x0-9}" y="${y-3.5}" width="9" height="7" rx="1"/><rect class="con" x="${x1}" y="${y-3.5}" width="9" height="7" rx="1"/>`;
+  const yd=yB+15, ang=Math.round(Math.asin(t.sin)*180/Math.PI);
+  h+=`<path class="dim" d="M${x0},${yd}H${x1}M${x0},${yd-5}v10M${x1},${yd-5}v10"/><text class="t-ink" x="${(x0+x1)/2}" y="${yd+14}" text-anchor="middle">2880 chord</text>`;
+  h+=`<text x="10" y="112">Nodes every ${S.panel} mm · braces at ${ang}°${S.type==="x"?" · X-braced":""}</text>`;
+  $("elevSvg").innerHTML=h;
+}
+
+function render(){
+  const b0=baseT(), t=cur(), L=state.L, over=L>t.maxL+1e-9;
+  document.querySelectorAll("#sysGrid button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.id===b0.id));
+  document.querySelectorAll("#spanChips button").forEach(b=>b.setAttribute("aria-pressed",Math.abs(Math.round(b.dataset.ft/3.2808*10)/10-L)<0.05));
+  document.querySelectorAll("#tblSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===state.tbl));
+  $("orientRow").hidden=!b0.sideV;
+  if(b0.sideV){
+    document.querySelectorAll("#orientSeg button").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.side==="1")===state.side));
+    $("orientHint").textContent=state.side?"On its side: only one upright face has diagonals.":"As drawn: both upright faces have diagonals.";
+  }
+  $("spanFt").textContent=ft(L);
+  const mu=makeUp(t,L);
+  $("makeup").innerHTML=mu?`<b>${mu.parts.map(p=>`${p.n} × ${p.len} m`).join(" + ")} = ${mu.len} m · ${fmt0(mu.kg)} kg</b><span>Fewest standard modules that cover this span</span>`:`<b>${fmt0(t.kgm*L)} kg</b><span>Truss weight over this span</span>`;
+  $("resTitle").textContent=`${t.name} · ${L} m / ${ft(L)}`;
+  const pill=$("statusPill"), ld=loadsOf(), any=!!(ld.q||ld.P||ld.F2||ld.F3);
+  const gv=$("gaugeVal");
+
+  if(over){
+    pill.className="pill bad"; pill.textContent="Too long";
+    ["rUdl","rCpl","rP2","rP3"].forEach(id=>$(id).textContent="–");
+    ["rUdlD","rCplD","rP2D","rP3D","rUdlF","rCplF","rP2F","rP3F"].forEach(id=>$(id).textContent="");
+    $("checks").innerHTML=`<p class="hint">${t.name} is limited to ${t.maxL} m (${ft(t.maxL)}). Shorten the span or choose a deeper truss.</p>`;
+    gv.setAttribute("stroke-dasharray","0 400"); $("gaugeTxt").textContent="–"; $("gaugeNote").textContent="span too long";
+    $("dstats").innerHTML=""; $("swWarn").hidden=true; $("kgsum").hidden=true;
+    drawSpan(t,L,null,false,true);
+  } else {
+    const u=R(t,L,"udl"), c=R(t,L,"cpl"), p2=R(t,L,"p2"), p3=R(t,L,"p3");
+    const dl=r=>r.kg<50?"":`Deflection ${mm(r.defl)} mm`;
+    $("rUdl").innerHTML=`${kg(u)}<small>kg</small>`; $("rUdlD").innerHTML=`${fmt0(u.kg/L)} kg/m · <b class="g-${u.gov}" style="color:var(--gc)">${GOV[u.gov]}</b>`; $("rUdlF").textContent=dl(u);
+    $("rCpl").innerHTML=`${kg(c)}<small>kg</small>`; $("rCplD").innerHTML=`<b class="g-${c.gov}" style="color:var(--gc)">${GOV[c.gov]}</b>`; $("rCplF").textContent=dl(c);
+    $("rP2").innerHTML=`${kg(p2)}<small>kg each</small>`; $("rP2D").innerHTML=`<b class="g-${p2.gov}" style="color:var(--gc)">${GOV[p2.gov]}</b>`; $("rP2F").textContent=dl(p2);
+    $("rP3").innerHTML=`${kg(p3)}<small>kg each</small>`; $("rP3D").innerHTML=`<b class="g-${p3.gov}" style="color:var(--gc)">${GOV[p3.gov]}</b>`; $("rP3F").textContent=dl(p3);
+
+    const ch=check(t,L,ld);
+    pill.className="pill "+(any?lvl(ch.max):"ok");
+    pill.textContent=!any?"No load":ch.max>1?"Overload":ch.max>0.85?"OK · near limit":"OK";
+    const row=(k)=>{const r=ch.u[k];return `<div class="check${k===ch.gov&&any?" total":""}"><span class="t">${GOV[k]}${k===ch.gov&&any?' <span class="tag '+lvl(r)+'">governs</span>':""}</span><span class="r">${(r*100).toFixed(0)}%</span><div class="bar"><i class="${lvl(r)}" style="width:${Math.min(100,r*100)}%"></i></div></div>`};
+    $("checks").innerHTML=any?["chord","spigot","brace","joint","defl"].map(row).join(""):`<p class="hint">Enter a load to check it.</p>`;
+    gv.setAttribute("class","val "+lvl(ch.max)); gv.setAttribute("stroke-dasharray",any?`${(Math.min(1.2,ch.max)/1.2*219.9).toFixed(1)} 400`:"0 400");
+    $("gaugeTxt").textContent=any?(ch.max*100).toFixed(0)+"%":"–";
+    $("gaugeNote").textContent=any?`of capacity used · set by ${GOV[ch.gov].toLowerCase()}`:"Enter a load to check it";
+    const lim=L*5, dcell=(k,v,s,cls)=>`<div${cls?` class="${cls}"`:""}><dt>${k}</dt><dd>${v} <small>${s}</small></dd></div>`;
+    $("dstats").innerHTML=dcell("Under your loads",ch.defl.toFixed(1)+" mm",`${(ch.defl/lim*100).toFixed(0)}% of limit`,ch.defl>lim?"bad":"")+
+      dcell("Allowed, L/200",lim.toFixed(0)+" mm","imposed load")+dcell("Self weight",ch.dself.toFixed(1)+" mm","always there")+dcell("Total sag",(ch.defl+ch.dself).toFixed(1)+" mm",`L/${(ch.defl+ch.dself)>0.05?fmt0(L*1000/(ch.defl+ch.dself)):"–"}`);
+    const sw=$("swWarn"); sw.hidden=!(ch.dself>lim);
+    sw.textContent=`This truss sags more than L/200 under its own weight at ${L} m. Use a deeper truss, add a centre support or pre-camber.`;
+    drawSpan(t,L,ch,any,false);
+    renderKg(t,L,ld,ch,any);
+  }
+
+  // details
+  const S=SHEET[t.id];
+  $("specTitle").textContent=t.name;
+  const st=$("specStatus"); st.textContent=t.status; st.className="tag "+(t.status==="In range"?"ok":"warn");
+  drawSection(t); drawElev(t);
+  $("mods").innerHTML=t.modules.map(([m,w])=>`<div><dt>${m} module</dt><dd>${w} kg</dd></div>`).join("");
+  const sp=[["Profile",`${t.profile} mm`],["Chord centres",`${t.z} mm deep`],["Main chords",t.chords],["Braces",t.braces],["Bracing",t.bracing],
+    ["Hardware",t.joint.text],["Part no.",t.part],["Weight / metre",`${t.kgm} kg/m`],["Material","AL 6082-T6, TIG welded, 5356 filler"]];
+  $("specs").innerHTML=sp.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+  const j1=jointCap(t,1), jn={pinShear:"pin shear",conBear:"pin bearing on connector",spTear:"spigot shear-out",spNet:"spigot net section",conTear:"connector shear-out",weld:"welded zone at connector"};
+  const cp=[["Moment M<sub>Rd</sub>",`${(t.MRd/1e6).toFixed(1)} kNm`],["Chord in compression",`${(t.NcChord/1000).toFixed(1)} kN`],
+    ["Spigot joint",`${(t.joint.cap/1000).toFixed(1)} kN · ${jn[t.joint.gov]}`],["Brace member",`${(Math.min(t.NdMember,t.NdTen)/1000).toFixed(1)} kN`],...(t.lat?[["Top chord, sideways buckling",`${(t.lat.NbLat/1000).toFixed(1)} kN (top face open)`]]:[]),
+    ["Brace weld to chord",`${(Math.min(j1.plast,j1.punch)/1000).toFixed(1)} kN (chord unloaded)`],["Bending stiffness EI",`${(t.EI/1e12).toFixed(2)} × 10¹² Nmm²`],["Shear stiffness of bracing",`${(t.S/1e6).toFixed(1)} MN`]];
+  $("caps").innerHTML=cp.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+  $("specNotes").innerHTML=t.notes.map(n=>`<li>${n}</li>`).join("");
+
+  // load / deflection table
+  $("chartTitle").textContent=`${t.short} ${state.tbl==="load"?"load chart":"deflection chart"}`;
+  const spans=SPANS.filter(s=>s<=t.maxL);
+  const dm=r=>r.kg<50?"–":mm(r.defl);
+  if(state.tbl==="load"){
+    $("loadHead").innerHTML=`<tr><th>Span</th><th>UDL kg</th><th>Centre kg</th><th>2 pts L/3</th><th>3 pts L/4</th><th>Defl. mm</th><th>Limited by</th></tr>`;
+    $("loadTable").innerHTML=spans.map(s=>{const u=R(t,s,"udl");return `<tr data-l="${s}" class="${s===L?"cur":""}"><td>${s} m <span class="ftc">${ft(s)}</span></td><td>${kg(u)} <span class="ftc">${fmt0(u.kg/s)}/m</span></td><td>${kg(R(t,s,"cpl"))}</td><td>${kg(R(t,s,"p2"))}</td><td>${kg(R(t,s,"p3"))}</td><td>${dm(u)}</td><td class="gov g-${u.gov}">${GOV[u.gov]}</td></tr>`}).join("");
+    $("tblHint").textContent=`Maximum imposed load, each case on its own. Defl. = mid-span deflection under the UDL shown, self weight not included. "Limited by" is the check that sets the UDL. Click a row to set the span.`;
+  } else {
+    $("loadHead").innerHTML=`<tr><th>Span</th><th>At max UDL</th><th>At max centre</th><th>At max 2 pts</th><th>At max 3 pts</th><th>Self weight</th><th>Limit L/200</th></tr>`;
+    $("loadTable").innerHTML=spans.map(s=>{const u=R(t,s,"udl");return `<tr data-l="${s}" class="${s===L?"cur":""}"><td>${s} m <span class="ftc">${ft(s)}</span></td><td>${dm(u)}</td><td>${dm(R(t,s,"cpl"))}</td><td>${dm(R(t,s,"p2"))}</td><td>${dm(R(t,s,"p3"))}</td><td>${mm(u.dself)}</td><td class="lim">${(s*5).toFixed(0)}</td></tr>`}).join("");
+    $("tblHint").textContent=`Mid-span deflection in mm when the truss carries its maximum load for each case. Self-weight sag is separate and not counted against the L/200 limit. Click a row to set the span.`;
+  }
+
+  // compare
+  $("cmpTitle").textContent=`All trusses at ${L} m`;
+  const list=TR.map(disp), top=Math.max(1,...list.filter(o=>L<=o.maxL+1e-9).map(o=>R(o,L,"udl").kg));
+  $("cmpTable").innerHTML=list.map(o=>{
+    const id=o.baseId||o.id, cls=id===b0.id?"cur":"";
+    if(L>o.maxL+1e-9) return `<tr data-id="${id}" class="${cls}"><td>${o.short}</td><td class="na" colspan="2">Over ${o.maxL} m</td><td><span class="tag bad">–</span></td></tr>`;
+    const k=check(o,L,ld), u=R(o,L,"udl");
+    const tag=!any?`<span class="tag ok">–</span>`:k.max>1?`<span class="tag bad">Overload</span>`:`<span class="tag ${lvl(k.max)}">${(k.max*100).toFixed(0)}%</span>`;
+    return `<tr data-id="${id}" class="${cls}"><td>${o.short}</td><td>${kg(u)}<span class="mini"><i style="width:${(u.kg/top*100).toFixed(0)}%"></i></span></td><td>${kg(R(o,L,"cpl"))}</td><td>${tag}</td></tr>`;
+  }).join("");
+
+  const xs=[]; for(let s=2;s<=t.maxL+1e-9;s=Math.round((s+0.5)*10)/10) xs.push(s);
+  drawChart($("chUdl"),xs.map(s=>[s,R(t,s,"udl")]),L,over?null:R(t,L,"udl"),t.maxL);
+  drawChart($("chCpl"),xs.map(s=>[s,R(t,s,"cpl")]),L,over?null:R(t,L,"cpl"),t.maxL);
+  drawDefl($("chDef"),xs.map(s=>[s,R(t,s,"udl")]),L,over?null:R(t,L,"udl"),t.maxL);
+  $("govLegend").innerHTML=Object.keys(GOV).map(k=>`<span><i class="dot g-${k}"></i>${k==="defl"?"Limited by deflection":GOV[k]}</span>`).join("")+
+    `<span><i class="dot lim"></i>L/200 limit</span><span><i class="dot g-defl"></i>Self-weight sag</span>`;
+}
+
+// ---- load summary in kg + spare capacity ----
+function spare(t,L,base,key){
+  // largest extra load of one type that can be added to the current loads (N or N/mm)
+  const add=v=>{const l={...base}; l[key]=(l[key]||0)+v; return check(t,L,l).max<=1;};
+  if(!add(0)) return 0;
+  let lo=0,hi=key==="q"?200:2e6;
+  for(let i=0;i<40;i++){const m=(lo+hi)/2; add(m)?lo=m:hi=m;}
+  return lo;
+}
+function renderKg(t,L,ld,ch,any){
+  $("kgsum").hidden=false;
+  const ru=R(t,L,"udl"), rc=R(t,L,"cpl"), r2=R(t,L,"p2"), r3=R(t,L,"p3");
+  const lines=[
+    {k:"UDL", set:`${fmt0(state.q)} kg/m × ${L} m`, tot:state.q*L, max:ru.kg, maxTxt:`${kg(ru)} kg`, ratio:state.q*L/ru.kg},
+    {k:"CPL · centre point", set:`${fmt0(state.P)} kg`, tot:state.P, max:rc.kg, maxTxt:`${kg(rc)} kg`, ratio:state.P/rc.kg},
+    {k:"2 pts at L/3", set:`2 × ${fmt0(state.F2)} kg`, tot:2*state.F2, max:r2.kg, maxTxt:`${kg(r2)} kg each`, ratio:state.F2/r2.kg},
+    {k:"3 pts at L/4", set:`3 × ${fmt0(state.F3)} kg`, tot:3*state.F3, max:r3.kg, maxTxt:`${kg(r3)} kg each`, ratio:state.F3/r3.kg},
+  ];
+  $("kgRows").innerHTML=lines.map(l=>`<tr class="${l.tot?"":"zero"}"><td>${l.k}</td><td>${l.set}</td><td>${fmt0(l.tot)}</td><td>${l.maxTxt}</td><td>${l.tot?`<span class="tag ${lvl(l.ratio)}">${(l.ratio*100).toFixed(0)}%</span>`:"–"}</td></tr>`).join("");
+  const imp=lines.reduce((a,l)=>a+l.tot,0), self=t.kgm*L, tot=imp+self;
+  $("kgFoot").innerHTML=
+    `<tr class="sum"><td colspan="2">Total imposed load</td><td>${fmt0(imp)}</td><td colspan="2">all loads together: <span class="tag ${any?lvl(ch.max):"ok"}">${any?(ch.max*100).toFixed(0)+"%":"–"}</span> · ${any?GOV[ch.gov]:"no load"}</td></tr>`+
+    `<tr><td colspan="2">Truss self weight (${t.kgm} kg/m × ${L} m)</td><td>${fmt0(self)}</td><td colspan="2"></td></tr>`+
+    `<tr class="sum"><td colspan="2">Total on the supports</td><td>${fmt0(tot)}</td><td colspan="2">each support <b>${fmt0(tot/2)} kg</b> working · ${fmt0((1.35*self+1.8*imp)/2)} kg factored</td></tr>`;
+  const row=(k,v,cls)=>`<div${cls?` class="${cls}"`:""}><dt>${k}</dt><dd>${v}</dd></div>`;
+  $("kgLoads").innerHTML="";
+  if(any && ch.max>1){
+    $("kgSpare").innerHTML=row("Spare capacity","None, overloaded","bad")+row("Reduce imposed load to about",`${fmt0(imp/ch.max)} kg total`)+row("Check that governs",GOV[ch.gov]);
+    return;
+  }
+  const sq=spare(t,L,ld,"q")*1000/9.81, sp=spare(t,L,ld,"P")/9.81, s2=spare(t,L,ld,"F2")/9.81, s3=spare(t,L,ld,"F3")/9.81;
+  $("kgLoads").innerHTML=row("Still free to add: UDL",`${fmt0(sq)} kg/m · ${fmt0(sq*L)} kg`,"hi")+row("or centre point",`${fmt0(sp)} kg`);
+  $("kgSpare").innerHTML=row("or 2 pts at L/3",`${fmt0(s2)} kg each`)+row("or 3 pts at L/4",`${fmt0(s3)} kg each`);
+}
+$("loadTable").addEventListener("click",e=>{const tr=e.target.closest("tr");if(tr)setSpan(+tr.dataset.l)});
+$("cmpTable").addEventListener("click",e=>{const tr=e.target.closest("tr");if(tr){ if(tr.dataset.id!==state.id){state.id=tr.dataset.id;state.side=false;} render()}});
+
+function niceMax(v){const p=10**Math.floor(Math.log10(v));const m=v/p;return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p}
+const CH={l:44,r:12,t:14,b:26,w:300,h:190,x0:0,x1:45};
+const chX=x=>CH.l+(x-CH.x0)/(CH.x1-CH.x0)*(CH.w-CH.l-CH.r);
+function chFrame(ymax){
+  const Y=y=>CH.t+(1-y/ymax)*(CH.h-CH.t-CH.b); let h="";
+  for(let i=0;i<=4;i++){const v=ymax*i/4,y=Y(v);h+=`<line class="gl" x1="${CH.l}" x2="${CH.w-CH.r}" y1="${y}" y2="${y}"/><text x="${CH.l-6}" y="${y+3}" text-anchor="end">${v>=1000?(v/1000).toFixed(v%1000?1:0)+"k":Math.round(v)}</text>`}
+  [0,10,20,30,40].forEach(x=>h+=`<text x="${chX(x)}" y="${CH.h-8}" text-anchor="middle">${x} m</text>`);
+  return {Y,h};
+}
+function chClick(svg,maxL){svg.onclick=e=>{const r=svg.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*CH.w;setSpan(Math.min(maxL,CH.x0+(x-CH.l)/(CH.w-CH.l-CH.r)*(CH.x1-CH.x0)))};}
+function chMark(Y,L,val,txt){
+  const xm=chX(Math.min(L,45)); let h=`<line class="ml" x1="${xm}" x2="${xm}" y1="${CH.t}" y2="${Y(0)}"/>`;
+  if(val!=null){const ym=Y(val), anchor=xm>CH.w*0.6?"end":"start", dx=anchor==="end"?-8:8;
+    h+=`<circle class="mk" cx="${xm}" cy="${ym}" r="4.5"/><text class="mt" x="${xm+dx}" y="${Math.max(ym-8,CH.t+8)}" text-anchor="${anchor}">${txt}</text>`;}
+  return h;
+}
+function drawChart(svg,pts,L,rated,maxL){
+  const ymax=niceMax(Math.max(...pts.map(p=>p[1].kg))*1.05), X=chX, f=chFrame(ymax), Y=f.Y; let h=f.h;
+  const d=pts.map((p,i)=>`${i?"L":"M"}${X(p[0]).toFixed(1)},${Y(p[1].kg).toFixed(1)}`).join("");
+  h+=`<path class="ar" d="${d}L${X(pts[pts.length-1][0])},${Y(0)}L${X(pts[0][0])},${Y(0)}Z"/>`;
+  // colour each segment by the check that governs it
+  for(let i=1;i<pts.length;i++) h+=`<line class="seg g-${pts[i][1].gov}" x1="${X(pts[i-1][0])}" y1="${Y(pts[i-1][1].kg)}" x2="${X(pts[i][0])}" y2="${Y(pts[i][1].kg)}"/>`;
+  h+=chMark(Y,L,rated?rated.kg:null,rated?kg(rated)+" kg":"");
+  svg.innerHTML=h; chClick(svg,maxL);
+}
+// deflection at the maximum UDL, with the L/200 limit and the self-weight sag
+function drawDefl(svg,pts,L,rated,maxL){
+  const ymax=niceMax(maxL*5), X=chX, f=chFrame(ymax), Y=f.Y; let h=f.h;
+  h+=`<line class="lim" x1="${X(0)}" y1="${Y(0)}" x2="${X(maxL)}" y2="${Y(maxL*5)}"/>`;
+  const path=(get)=>{let d="",pen=false; for(const p of pts){const v=get(p); if(v==null||v>ymax){pen=false;continue;} d+=`${pen?"L":"M"}${X(p[0]).toFixed(1)},${Y(v).toFixed(1)}`; pen=true;} return d;};
+  h+=`<path class="sw" d="${path(p=>p[1].dself)}"/><path class="dl" d="${path(p=>p[1].kg<50?null:p[1].defl)}"/>`;
+  const ok=rated&&rated.kg>=50;
+  h+=chMark(Y,L,ok?rated.defl:null,ok?mm(rated.defl)+" mm":"");
+  svg.innerHTML=h; chClick(svg,maxL);
+}
+
+// ---- download load chart (PDF / CSV) ----
+const PDF_SPANS=[2,3,4,5,6,8,9,10,12,14,15,16,18,18.3,20,21,24,24.4,27,30,33,36,39,42,42.7];
+const clean=v=>String(v).replace(/≈/g,"~").replace(/→/g,"->").replace(/≤/g,"<=").replace(/γ/g,"g").replace(/[^\x00-\xFF·–—’]/g,"");
+const fileBase=t=>"Vardaman_"+t.name.replace(/^VST\s*/,"").replace(/[×x]/g,"x").replace(/[^A-Za-z0-9x]+/g,"_").replace(/_+$/,"")+"_Load_Chart";
+// ---- customer data sheet (PDF) ----
+const SHEET = {
+  "300":{H:300,W:300,duty:"Light Duty",sub:"25x2 mm",type:"warren",panel:270,sys:"50 mm conical spigot"},
+  "400":{H:400,W:400,duty:"Medium Duty",sub:"40x3 mm",type:"x",panel:470,sys:"50 mm conical spigot"},
+  "600-50":{H:600,W:525,duty:"Medium Duty",sub:"30x3, 40x3 mm",type:"post",panel:470,sys:"50 mm conical spigot"},
+  "600-60":{H:600,W:525,duty:"Medium Duty",sub:"30x3, 40x3 mm",type:"post",panel:470,sys:"60 mm conical spigot"},
+  "600-H":{H:600,W:535,duty:"Heavy Duty",sub:"30x3, 40x3 mm",type:"post",panel:470,sys:"60 mm conical spigot"},
+  "600-60x4":{H:600,W:525,duty:"Heavy Duty",sub:"50x3, 30x3 mm",type:"post",panel:467,top:"open",sys:"60 mm conical spigot"},
+  "490-4":{H:490,W:490,duty:"Heavy Duty",sub:"40x3 mm",type:"warren",panel:430,sys:"60 mm conical spigot"},
+  "490-5":{H:490,W:490,duty:"Heavy Duty",sub:"40x3 mm",type:"warren",panel:430,sys:"60 mm conical spigot"},
+  "480":{H:480,W:480,duty:"Heavy Duty",sub:"40x3 mm",type:"warren",panel:430,sys:"60 mm conical spigot"},
+  "800":{H:800,W:550,duty:"Heavy Duty",sub:"50x3, 30x3 mm",type:"post",panel:460,sys:"60 mm conical spigot"},
+  "760-60":{H:760,W:520,duty:"Heavy Duty",sub:"50x3, 30x3 mm",type:"post",panel:467,top:"open",sys:"60 mm conical spigot"},
+  "760-50":{H:760,W:520,duty:"Medium Duty",sub:"50x3, 30x3 mm",type:"post",panel:467,top:"open",sys:"50 mm conical spigot"},
+  "800-610":{H:800,W:610,duty:"Heavy Duty",sub:"50x3, 30x3 mm",type:"post",panel:467,top:"open",sys:"60 mm conical spigot"},
+  "1100-4":{H:1100,W:650,duty:"Heavy Duty",sub:"50x3, 30x3 mm",type:"post",panel:467,top:"open",sys:"60 mm conical spigot"},
+  "1100-6":{H:1100,W:650,duty:"Extra Heavy Duty",sub:"50x3, 30x3 mm",type:"post",panel:467,top:"open",sys:"60 mm conical spigot"},
+};
+// trusses that can also be rated on their side: same frame, turned 90 degrees
+for(const T of TRUSS_DEF) if(T.side){ const b=SHEET[T.id]; SHEET[T.id+"-S"]={...b,H:b.W,W:b.H,top:undefined,rot:true}; }
+const SHEET_SPANS=[4,6,8,10,12,14,16,18,20,24,28,32,36,40,42];
+const tube=s=>clean(s).replace(/Ø/g,"").replace(/\s*×\s*/g,"x").replace(/\s*\(.*\)/,"").replace(/\s+at\s.*$/,"").trim()+(/mm/.test(s)?"":" mm");
+function clearSpan(t){
+  let best=4;
+  for(let L=4;L<=Math.floor(t.maxL);L++){
+    const sag=check(t,L,{}).dself, u=R(t,L,"udl");
+    if(sag<=L*5 && u.kg/L>=15) best=L; else break;
+  }
+  return best;
+}
+// isometric wire drawing of a 3-bay truss segment
+function drawTruss(doc,t,x0,y0,boxW,boxH){
+  const S=SHEET[t.id], H=S.H, W=S.W, p=S.panel, n=Math.max(5,Math.min(8,Math.round(2900/p))), L=n*p;
+  const ca=Math.cos(Math.PI/9), sa=Math.sin(Math.PI/9);              // length axis 20° up to the right
+  const P=(x,y,z)=>[x*ca + y*0.55, -x*sa + y*0.42 - z];               // y = depth towards viewer-right
+  const pts=[]; for(const x of [-0.04*L,1.04*L]) for(const y of [0,W]) for(const z of [0,H]) pts.push(P(x,y,z));
+  const minU=Math.min(...pts.map(q=>q[0])), maxU=Math.max(...pts.map(q=>q[0])), minV=Math.min(...pts.map(q=>q[1])), maxV=Math.max(...pts.map(q=>q[1]));
+  const k=Math.min(boxW/(maxU-minU), boxH/(maxV-minV));
+  const offU=x0+(boxW-(maxU-minU)*k)/2, offV=y0+(boxH-(maxV-minV)*k)/2;
+  const Q=(x,y,z)=>{const [u,v]=P(x,y,z); return [offU+(u-minU)*k, offV+(v-minV)*k];};
+  const ln=(a,b,w,c)=>{doc.setLineWidth(w); doc.setDrawColor(...c); const A=Q(...a),B=Q(...b); doc.line(A[0],A[1],B[0],B[1]);};
+  const far=[150,158,170], near=[70,80,96], chord=[40,48,62];
+  // faces: side y=0 (far), side y=W (near), top z=H, bottom z=0
+  const face=(fixed,which,col,w)=>{                                    // draw bracing of one face
+    for(let i=0;i<n;i++){
+      const xa=i*p, xb=(i+1)*p;
+      const A=(x,s)=>which==="side"?[x,fixed,s?H:0]:[x,s?W:0,fixed];
+      if(S.type==="x"){ ln(A(xa,0),A(xb,1),w,col); ln(A(xa,1),A(xb,0),w,col); }
+      else { const up=i%2===0; ln(A(xa,up?0:1),A(xb,up?1:0),w,col); }
+      if(S.type==="post"||S.type==="x") ln(A(xb,0),A(xb,1),w,col);
+    }
+  };
+  face(0,"side",far,0.25); face(0,"bottom",far,0.25);
+  if(S.top==="open"){ for(let i=1;i<n;i++) ln([i*p,0,H],[i*p,W,H],0.3,near); } else face(H,"top",near,0.3);
+  face(W,"side",near,0.35);
+  for(const x of [0,L]){ ln([x,0,0],[x,W,0],0.5,near); ln([x,0,H],[x,W,H],0.5,near); ln([x,0,0],[x,0,H],0.5,near); ln([x,W,0],[x,W,H],0.5,near); }
+  for(const [y,z] of [[0,0],[0,H],[W,0],[W,H]]) ln([-0.04*L,y,z],[L*1.04,y,z],(y===W?1.1:0.8),y===W?chord:[110,118,130]);
+}
+// ---- 3D truss model (three.js) ----
+function trussMembers(t){
+  const S=SHEET[t.id], H=S.rot?S.W:S.H, W=S.rot?S.H:S.W;
+  const D=parseFloat((t.chords.match(/Ø\s*([\d.]+)/)||[0,50])[1]);
+  const d=parseFloat((t.braces.match(/Ø\s*([\d.]+)/)||[0,30])[1]);
+  const p=S.panel, n=Math.max(5,Math.min(8,Math.round(2880/p))), L=n*p;
+  const zc=H-D, yc=W-D;                     // chord centre lines
+  const m=[], add=(a,b,r,k)=>m.push({a,b,r,k});
+  for(const y of [0,yc]) for(const z of [0,zc]) add([0,y,z],[L,y,z],D/2,"chord");
+  const face=(kind)=>{                        // kind: near/far side, top, bottom
+    for(let i=0;i<n;i++){
+      const xa=i*p, xb=(i+1)*p, up=i%2===0;
+      const pt=(x,s)=> kind==="near"?[x,yc,s?zc:0]: kind==="far"?[x,0,s?zc:0]: kind==="top"?[x,s?yc:0,zc]:[x,s?yc:0,0];
+      if(S.type==="x"){ add(pt(xa,0),pt(xb,1),d/2,"brace"); add(pt(xa,1),pt(xb,0),d/2,"brace"); }
+      else add(pt(xa,up?0:1),pt(xb,up?1:0),d/2,"brace");
+      if((S.type==="post"||S.type==="x") && i<n-1) add(pt(xb,0),pt(xb,1),d/2*0.95,"post");
+    }
+  };
+  face("near"); face("far"); face("bottom");
+  if(S.top==="open"||S.rot){ for(let i=1;i<n;i++) add([i*p,0,zc],[i*p,yc,zc],d/2,"post"); } else face("top");
+  for(const x of [0,L]){                       // end frames
+    add([x,0,0],[x,yc,0],d/2*1.25,"frame"); add([x,0,zc],[x,yc,zc],d/2*1.25,"frame");
+    add([x,0,0],[x,0,zc],d/2*1.25,"frame"); add([x,yc,0],[x,yc,zc],d/2*1.25,"frame");
+  }
+  const big=/60/.test(S.sys)?63.5:50, cl=/60/.test(S.sys)?75:50;
+  for(const y of [0,yc]) for(const z of [0,zc]){            // connectors + spigot noses
+    add([-cl*0.15,y,z],[cl,y,z],big/2,"conn"); add([L-cl,y,z],[L+cl*0.15,y,z],big/2,"conn");
+    add([-cl*0.15-38,y,z],[-cl*0.15,y,z],big*0.34,"spigot");
+  }
+  if(S.rot){                                   // lay the frame on its side: braced bottom face towards the viewer
+    const tr=q=>[q[0],zc-q[2],q[1]];
+    for(const e of m){ e.a=tr(e.a); e.b=tr(e.b); }
+    return {m,L,H:yc,W:zc,D};
+  }
+  return {m,L,H:zc,W:yc,D};
+}
+function buildTrussScene(t){
+  const T=window.THREE, scene=new T.Scene(), g=new T.Group();
+  const {m,L,H,W,D}=trussMembers(t);
+  const mats={
+    chord:new T.MeshStandardMaterial({color:0xe4e8ec,metalness:1.0,roughness:0.2}),
+    brace:new T.MeshStandardMaterial({color:0xdde1e6,metalness:1.0,roughness:0.26}),
+    post:new T.MeshStandardMaterial({color:0xdde1e6,metalness:1.0,roughness:0.26}),
+    frame:new T.MeshStandardMaterial({color:0xe0e4e9,metalness:1.0,roughness:0.22}),
+    conn:new T.MeshStandardMaterial({color:0xc9ced5,metalness:1.0,roughness:0.14}),
+    spigot:new T.MeshStandardMaterial({color:0x9aa3ae,metalness:1.0,roughness:0.18}),
+  };
+  const Y=new T.Vector3(0,1,0);
+  for(const e of m){
+    const a=new T.Vector3(e.a[0],e.a[2],e.a[1]), b=new T.Vector3(e.b[0],e.b[2],e.b[1]);
+    const dir=b.clone().sub(a), len=dir.length();
+    const geo=new T.CylinderGeometry(e.r,e.r,len,e.k==="chord"||e.k==="conn"?28:16,1,false);
+    const mesh=new T.Mesh(geo,mats[e.k]); mesh.position.copy(a.clone().add(b).multiplyScalar(0.5));
+    mesh.quaternion.setFromUnitVectors(Y,dir.normalize()); mesh.castShadow=true; mesh.receiveShadow=true; g.add(mesh);
+    if(e.k==="chord"||e.k==="brace"||e.k==="post"||e.k==="frame"){ // weld nodes
+      for(const q of [a,b]){ const s=new T.Mesh(new T.SphereGeometry(e.r*1.02,12,10),mats[e.k]); s.position.copy(q); g.add(s); }
+    }
+  }
+  g.position.set(-L/2,-H/2,-W/2); const holder=new T.Group(); holder.add(g); scene.add(holder);
+  // lights
+  scene.add(new T.HemisphereLight(0xffffff,0x8a939e,0.35));
+  const key=new T.DirectionalLight(0xffffff,0.8); key.position.set(L*0.1,L*1.6,L*0.25); key.castShadow=true;
+  key.shadow.mapSize.set(2048,2048); const sc=key.shadow.camera; sc.left=-L*0.7; sc.right=L*0.7; sc.top=L*0.7; sc.bottom=-L*0.7; sc.near=10; sc.far=L*3; key.shadow.bias=-0.0004;
+  scene.add(key);
+  const rim=new T.DirectionalLight(0xffffff,0.25); rim.position.set(-L,L*0.3,-L*0.8); scene.add(rim);
+  const fill=new T.DirectionalLight(0xffffff,0.3); fill.position.set(-L*0.4,L*0.2,L); scene.add(fill);
+  // ground shadow
+  const ground=new T.Mesh(new T.PlaneGeometry(L*4,L*4),new T.ShadowMaterial({opacity:0.26}));
+  ground.rotation.x=-Math.PI/2; ground.position.y=-H/2-D/2-H*0.55; ground.receiveShadow=true; scene.add(ground);
+  return {scene,holder,L,H,W};
+}
+// soft-box studio reflections so the tubes read as polished aluminium
+function studioEnv(T,renderer){
+  const pm=new T.PMREMGenerator(renderer), sc=new T.Scene();
+  const dome=new T.Mesh(new T.SphereGeometry(100,32,16),new T.MeshBasicMaterial({map:gradientTexture(T,"#bcc4cd","#3b434d"),side:T.BackSide}));
+  sc.add(dome);
+  const box=(w,h,x,y,z,i)=>{const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({color:new T.Color(i,i,i),side:T.DoubleSide})); m.position.set(x,y,z); m.lookAt(0,0,0); sc.add(m);};
+  box(110,26,0,85,0,4.0); box(26,90,-88,10,25,2.6); box(40,70,80,20,-45,1.2); box(160,8,0,-6,95,1.6);
+  const tex=pm.fromScene(sc,0.035).texture; pm.dispose(); return tex;
+}
+function gradientTexture(T,top,bottom){
+  const c=document.createElement("canvas"); c.width=4; c.height=256; const x=c.getContext("2d");
+  const gr=x.createLinearGradient(0,0,0,256); gr.addColorStop(0,top); gr.addColorStop(1,bottom); x.fillStyle=gr; x.fillRect(0,0,4,256);
+  const tx=new T.CanvasTexture(c); tx.encoding=T.sRGBEncoding; return tx;
+}
+function frameCamera(T,cam,s,az,el){
+  const R=Math.hypot(s.L,s.H,s.W)/2, fov=cam.fov*Math.PI/180;
+  const dist=R/Math.sin(fov/2)*(cam.aspect<1.2?1.02:cam.aspect<1.8?0.88:0.74);
+  cam.position.set(Math.sin(az)*Math.cos(el)*dist, Math.sin(el)*dist, Math.cos(az)*Math.cos(el)*dist);
+  cam.near=dist/50; cam.far=dist*10; cam.lookAt(0,0,0); cam.updateProjectionMatrix();
+}
+// high-resolution still for the PDF (JPEG data URL), or null if WebGL is unavailable
+function renderTrussImage(t,w,h){
+  const T=window.THREE; if(!T) return null;
+  let r=null;
+  try{
+    const c=document.createElement("canvas"); c.width=w; c.height=h;
+    r=new T.WebGLRenderer({canvas:c,antialias:true,preserveDrawingBuffer:true,alpha:false});
+    r.setPixelRatio(1); r.setSize(w,h,false); r.shadowMap.enabled=true; r.shadowMap.type=T.PCFSoftShadowMap;
+    r.outputEncoding=T.sRGBEncoding; r.toneMapping=T.ACESFilmicToneMapping; r.toneMappingExposure=1.18;
+    const s=buildTrussScene(t); s.scene.background=gradientTexture(T,"#f6f7f9","#d6dbe1"); s.scene.environment=studioEnv(T,r);
+    const cam=new T.PerspectiveCamera(32,w/h,1,100000); frameCamera(T,cam,s,-0.72,0.24);
+    r.render(s.scene,cam); const url=c.toDataURL("image/jpeg",0.92);
+    s.scene.traverse(o=>{if(o.geometry)o.geometry.dispose();}); r.dispose(); r.forceContextLoss&&r.forceContextLoss();
+    return url;
+  }catch(e){ try{r&&r.dispose();}catch(_){} return null; }
+}
+function buildPdf(t){
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
+  const S=SHEET[t.id], W=210, M=12;
+  const navy=[19,41,75], navy2=[11,29,58], blue=[10,90,184], amber=[164,80,11], ink=[28,37,51], muted=[107,116,130], silver=[201,206,214], paper=[245,246,248], white=[255,255,255], tint=[232,239,249], red=[179,38,30], green=[31,122,74];
+  const cs=clearSpan(t), csFt=Math.round(cs*3.2808), f10=v=>v<50?"-":fmt0(Math.floor(v/10)*10);
+  const sp=(txt,x,y,o={})=>doc.text(txt,x,y,o);
+  const name=clean(t.name);
+  const withCase=$("pdfCase").checked && state.L<=t.maxL+1e-9;
+  const header=(title)=>{
+    doc.setFillColor(...paper); doc.rect(0,0,W,297,"F");
+    doc.setFillColor(...navy2); doc.rect(0,0,W,30,"F");
+    doc.setFillColor(...silver); doc.rect(0,30,W,1.4,"F");
+    try{const img=document.querySelector(".brand img"); if(img) doc.addImage(img.src,"PNG",M,4,16.6,22);}catch(e){}
+    doc.setFont("helvetica","bold"); doc.setFontSize(8); doc.setTextColor(...silver); sp("VARDAMAN SAFETECH  ·  DESIGN DEPARTMENT",M+21,11,{charSpace:0.7});
+    doc.setFontSize(19); doc.setTextColor(...white); sp(title,M+21,21,{charSpace:0.4});
+    doc.setFont("helvetica","italic"); doc.setFontSize(9); doc.setTextColor(238,241,245); sp("Shaping Structures, Securing Lives",W-M,13,{align:"right"});
+    doc.setFont("helvetica","bold"); doc.setFontSize(8); const kw=doc.getTextWidth("THINK10X")+8*0.8+7;
+    doc.setFillColor(...silver); doc.roundedRect(W-M-kw,17,kw,6.5,1,1,"F");
+    doc.setTextColor(...navy2); sp("THINK10X",W-M-kw+3.5,21.6,{charSpace:0.8});
+  };
+  const footer=(n)=>{
+    const fy=270, cells=[["COMPANY","VARDAMAN SAFETECH, UDAIPUR"],["DOCUMENT","DS-"+t.id.toUpperCase()],["MATERIAL","AL 6082-T6"],["DATE",new Date().toLocaleDateString("en-GB")],["SHEET",n+" OF 2"]];
+    doc.setFillColor(...white); doc.setDrawColor(...navy); doc.setLineWidth(0.5); doc.setLineDashPattern([],0); doc.rect(M,fy,W-2*M,13,"FD");
+    const widths=[60,36,30,30,30]; let cx=M;
+    cells.forEach(([k,v],i)=>{ if(i) doc.line(cx,fy,cx,fy+13);
+      doc.setFont("helvetica","bold"); doc.setFontSize(6); doc.setTextColor(...muted); sp(k,cx+2.5,fy+4.6,{charSpace:0.5});
+      doc.setFontSize(8); doc.setTextColor(...ink); sp(v,cx+2.5,fy+10); cx+=widths[i]; });
+    doc.setFont("helvetica","normal"); doc.setFontSize(7.2); doc.setTextColor(...muted);
+    sp("A unit of The Amar Enterprises  ·  H 30, Udhyog Vihar, Sukher, Udaipur, Rajasthan",M,289);
+    doc.setFont("helvetica","bold"); doc.setTextColor(...blue); sp("Sales@vardamansafetech.com  ·  +91 91191 32686  ·  @vardamansafetech",W-M,289,{align:"right"});
+  };
+  const secHead=(txt,x,y,w)=>{doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(...navy); sp(txt,x,y,{charSpace:0.6});
+    doc.setDrawColor(...navy); doc.setLineWidth(0.6); doc.setLineDashPattern([],0); doc.line(x,y+1.8,x+w,y+1.8);};
+  const dutyTag=(y)=>{
+    const tag=(S.duty+" · "+S.sys.replace(" conical spigot"," system")).toUpperCase();
+    doc.setFont("helvetica","bold"); doc.setFontSize(7.5); const tw=doc.getTextWidth(tag)+tag.length*0.4+8;
+    doc.setFillColor(...amber); doc.roundedRect(M,y,tw,6,1,1,"F"); doc.setTextColor(...white); sp(tag,M+4,y+4.1,{charSpace:0.4});
+  };
+
+  // ================= page 1: data sheet =================
+  header("TRUSS DATA SHEET");
+  doc.setFont("helvetica","bold"); doc.setFontSize(22); doc.setTextColor(...navy); sp(name,M,45);
+  dutyTag(49.5);
+  doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(...muted);
+  sp("AL 6082-T6  ·  TIG welded, 5356 filler  ·  all dimensions in mm",W-M,53.6,{align:"right"});
+  // drawing panel: 3D view + end section
+  const py=60, ph=80;
+  doc.setFillColor(...white); doc.setDrawColor(...silver); doc.setLineWidth(0.3); doc.rect(M,py,W-2*M,ph,"FD");
+  const shot=renderTrussImage(t,2300,1390);
+  if(shot) doc.addImage(shot,"JPEG",M+0.3,py+0.3,132,ph-0.6,undefined,"FAST"); else drawTruss(doc,t,M+6,py+12,120,ph-18);
+  doc.setDrawColor(...silver); doc.setLineWidth(0.3); doc.line(M+132.5,py+6,M+132.5,py+ph-6);
+  const ex=M+140, ey=py+18, box=40, hS=S.H, wS=S.W, sc=box/Math.max(hS,wS), bw=wS*sc, bh=hS*sc, ox=ex+(box-bw)/2+4, oy=ey+(box-bh)/2;
+  doc.setDrawColor(...navy); doc.setLineWidth(0.5); doc.rect(ox,oy,bw,bh);
+  const cr=Math.max(1.4,t.chord.D*sc/2);
+  for(const [cx,cy] of [[ox,oy],[ox+bw,oy],[ox,oy+bh],[ox+bw,oy+bh]]){doc.setFillColor(...white); doc.circle(cx,cy,cr,"FD");}
+  doc.setDrawColor(...muted); doc.setLineWidth(0.2);
+  doc.line(ox,oy+bh+5,ox+bw,oy+bh+5); doc.line(ox,oy+bh+3.5,ox,oy+bh+6.5); doc.line(ox+bw,oy+bh+3.5,ox+bw,oy+bh+6.5);
+  doc.line(ox-5,oy,ox-5,oy+bh); doc.line(ox-6.5,oy,ox-3.5,oy); doc.line(ox-6.5,oy+bh,ox-3.5,oy+bh);
+  doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(...ink);
+  sp(String(wS),ox+bw/2,oy+bh+9.5,{align:"center"}); sp(String(hS),ox-7,oy+bh/2+1,{align:"right"});
+  doc.setFont("helvetica","bold"); doc.setFontSize(6.8); doc.setTextColor(...muted);
+  sp("END SECTION",ex+box/2+4,py+8,{align:"center",charSpace:0.5}); sp("3D VIEW  ·  3 M MODULE",M+6,py+8,{charSpace:0.5});
+  // key figure tiles
+  const Lk=Math.min(12,cs), u12=R(t,Lk,"udl");
+  const tiles=[["CLEAR SPAN UP TO",cs+" m",csFt+" ft"],["UDL AT "+Lk+" m",f10(u12.kg)+" kg",fmt0(u12.kg/Lk)+" kg/m"],["DEFLECTION AT "+Lk+" m",mm(u12.defl)+" mm","at max UDL · limit "+(Lk*5)+" mm"],["SELF WEIGHT",t.kgm+" kg/m",clean(t.chords).replace(/\s*\(.*\)/,"")+" chords"]];
+  const ty=py+ph+5, tW=(W-2*M-9)/4;
+  tiles.forEach(([lab,big,small],i)=>{const x=M+i*(tW+3);
+    doc.setFillColor(...white); doc.rect(x,ty,tW,20,"F"); doc.setFillColor(...blue); doc.rect(x,ty,tW,1.2,"F");
+    doc.setFont("helvetica","bold"); doc.setFontSize(6.6); doc.setTextColor(...muted); sp(lab,x+3.5,ty+6.5,{charSpace:0.4});
+    doc.setFontSize(14); doc.setTextColor(...navy); sp(big,x+3.5,ty+13.5);
+    doc.setFont("helvetica","normal"); doc.setFontSize(7); doc.setTextColor(...muted); sp(small,x+3.5,ty+17.6);});
+  // specification + load chart
+  const y0=ty+27;
+  secHead("SPECIFICATION",M,y0,56);
+  const spec=[["Profile",S.H+" × "+S.W],["Chord centres",t.z+" deep"],["Main chords",clean(t.chords).replace(/\s*\(.*\)/,"")],["Braces",clean(t.braces).replace(/\s+at\s.*$/,"")],["Sub tubes",S.sub.replace(" mm","").split(/,\s*/).map(x=>"Ø"+x.replace("x"," × ")).join(", ")],
+    ["Bracing",S.rot?"Diagonals + posts on one upright face":S.type==="x"?"X-braced, with posts":S.type==="post"?(S.top==="open"?"Diagonals + posts, top cross tubes":"Diagonals + posts"):"Single diagonals"],["Connection",S.sys],["Weight",t.kgm+" kg/m"],["Modules",t.modules.map(m=>m[0]+" ("+m[1].replace(/\s*\(.*\)/,"")+" kg)").join(", ")],["Material","EN-AW 6082 T6"]];
+  doc.autoTable({startY:y0+4,margin:{left:M,right:W-M-56},theme:"plain",
+    styles:{font:"helvetica",fontSize:7.6,cellPadding:{top:1.25,bottom:1.25,left:0,right:1},textColor:ink,lineColor:silver,lineWidth:{bottom:0.2}},
+    columnStyles:{0:{textColor:muted,cellWidth:20}},body:spec.map(r=>r.map(clean))});
+  const specEnd=doc.lastAutoTable.finalY;
+  const lx=M+62;
+  secHead("LOAD CHART",lx,y0,W-M-lx);
+  const spans=SHEET_SPANS.filter(s=>s<=Math.min(t.maxL,cs)+1e-9);
+  const body=spans.map(L=>{const u=R(t,L,"udl"),c=R(t,L,"cpl"),p2=R(t,L,"p2"),p3=R(t,L,"p3");
+    return [L+" m",(L*3.2808).toFixed(1)+" ft",f10(u.kg),fmt0(u.kg/L),mm(u.defl),f10(c.kg),f10(p2.kg),f10(p3.kg)];});
+  doc.autoTable({startY:y0+4,margin:{left:lx,right:M},
+    head:[["Span","","UDL total\nkg","UDL\nkg/m","Deflection\nmm","Centre\nkg","2 pts L/3\nkg each","3 pts L/4\nkg each"]],
+    body, theme:"plain",
+    styles:{font:"helvetica",fontSize:7.2,cellPadding:{top:1.1,bottom:1.1,left:1,right:1.4},halign:"right",textColor:ink,lineColor:silver,lineWidth:{bottom:0.15}},
+    headStyles:{fillColor:navy,textColor:white,fontStyle:"bold",fontSize:6.6,halign:"right",valign:"bottom"},
+    columnStyles:{0:{halign:"left",fontStyle:"bold",textColor:navy},1:{halign:"left",textColor:muted},2:{fontStyle:"bold"},4:{textColor:blue,fontStyle:"bold"}},
+    didParseCell:d=>{ if(d.section==="body"&&d.row.index%2===1) d.cell.styles.fillColor=white; if(d.section==="head"&&d.column.index<2) d.cell.styles.halign="left"; },
+  });
+  let ny=Math.max(doc.lastAutoTable.finalY, specEnd)+6;
+  doc.setFont("helvetica","normal"); doc.setFontSize(7); doc.setTextColor(...muted);
+  sp(doc.splitTextToSize("Figures are the largest imposed load for each case on its own. Truss self weight is already allowed for. Deflection is the mid-span sag under the UDL shown; page 2 gives it for every load case. Single span on two supports, loads hung at the nodes, deflection limited to span/200. Every rig should be checked by a competent engineer before loading.",W-2*M),M,ny);
+  footer(1);
+
+  // ================= page 2: load and deflection =================
+  doc.addPage(); header("LOAD AND DEFLECTION CHART");
+  doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(...navy); sp(name,M,42);
+  doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(...muted);
+  sp("Deflection limit: span / 200  ·  "+t.kgm+" kg/m  ·  "+clean(t.chords).replace(/\s*\(.*\)/,"")+" chords",W-M,42,{align:"right"});
+  secHead("MAXIMUM LOAD AND THE DEFLECTION IT CAUSES",M,50,W-2*M);
+  const spans2=[...new Set([...spans,...(withCase&&state.L<=cs?[state.L]:[])])].sort((a,b)=>a-b);
+  const dfl=r=>r.kg<50?"-":mm(r.defl);
+  const body2=spans2.map(L=>{const u=R(t,L,"udl"),c=R(t,L,"cpl"),p2=R(t,L,"p2"),p3=R(t,L,"p3");
+    return [String(L),(L*3.2808).toFixed(1),f10(u.kg),u.kg<50?"-":fmt0(u.kg/L),dfl(u),f10(c.kg),dfl(c),f10(p2.kg),dfl(p2),f10(p3.kg),dfl(p3),mm(u.dself),(L*5).toFixed(0)];});
+  const dcols=[4,6,8,10];
+  doc.autoTable({startY:54,margin:{left:M,right:M},theme:"plain",
+    head:[[{content:"SPAN",colSpan:2},{content:"UDL",colSpan:3},{content:"CENTRE POINT",colSpan:2},{content:"2 PTS AT L/3",colSpan:2},{content:"3 PTS AT L/4",colSpan:2},{content:"SELF WT"},{content:"LIMIT"}],
+          ["m","ft","kg total","kg/m","defl. mm","kg","defl. mm","kg each","defl. mm","kg each","defl. mm","sag mm","L/200 mm"]],
+    body:body2,
+    styles:{font:"helvetica",fontSize:7.4,cellPadding:{top:1.15,bottom:1.15,left:1.2,right:1.6},halign:"right",textColor:ink,lineColor:silver,lineWidth:{bottom:0.15}},
+    headStyles:{fillColor:navy,textColor:white,fontStyle:"bold",fontSize:6.6,halign:"right"},
+    columnStyles:{0:{halign:"left",fontStyle:"bold",textColor:navy},1:{halign:"left",textColor:muted},2:{fontStyle:"bold"},5:{fontStyle:"bold"},7:{fontStyle:"bold"},9:{fontStyle:"bold"},11:{textColor:muted},12:{textColor:muted}},
+    didParseCell:d=>{
+      if(d.section==="head"){ if(d.row.index===0){d.cell.styles.halign="center"; d.cell.styles.fontSize=6.8; if(d.column.index===0) d.cell.styles.halign="left";} else {d.cell.styles.fillColor=navy2; if(d.column.index<2) d.cell.styles.halign="left";} return; }
+      if(d.row.index%2===1) d.cell.styles.fillColor=white;
+      if(dcols.includes(d.column.index)){ d.cell.styles.fillColor=tint; d.cell.styles.textColor=blue; }
+      if(withCase&&Number(d.row.raw[0])===state.L&&d.column.index===0) d.cell.styles.textColor=amber;
+    },
+  });
+  let y2=doc.lastAutoTable.finalY+9;
+  // two graphs
+  const maxS=spans.length?spans[spans.length-1]:4, xmax=Math.max(10,Math.ceil(maxS/5)*5);
+  const fine=[]; for(let s=2;s<=maxS+1e-9;s=Math.round((s+0.5)*10)/10) fine.push(s);
+  const plot=(x,y,w,h,title,ymax,series,legend)=>{
+    doc.setFont("helvetica","bold"); doc.setFontSize(7.2); doc.setTextColor(...navy); sp(title,x,y,{charSpace:0.4});
+    y+=2.5; doc.setFillColor(...white); doc.rect(x,y,w,h,"F");
+    const pl=x+11, pr=x+w-4, pt=y+9, pb=y+h-7, X=v=>pl+(v/xmax)*(pr-pl), Y=v=>pb-(Math.min(v,ymax)/ymax)*(pb-pt);
+    doc.setFont("helvetica","normal"); doc.setFontSize(6); doc.setTextColor(...muted); doc.setLineDashPattern([],0);
+    for(let i=0;i<=4;i++){const v=ymax*i/4; doc.setDrawColor(...silver); doc.setLineWidth(i?0.1:0.25); doc.line(pl,Y(v),pr,Y(v)); sp(v>=1000?(v/1000).toFixed(v%1000?1:0)+"k":String(Math.round(v)),pl-1.5,Y(v)+0.8,{align:"right"});}
+    const stepX=xmax<=20?5:10; for(let v=0;v<=xmax;v+=stepX){ doc.line(X(v),pb,X(v),pb+1); sp(v+" m",X(v),pb+4,{align:"center"}); }
+    for(const s of series){
+      doc.setDrawColor(...s.color); doc.setLineWidth(s.width||0.5); doc.setLineDashPattern(s.dash||[],0);
+      for(let i=1;i<s.pts.length;i++){const a=s.pts[i-1],b=s.pts[i]; if(a[1]==null||b[1]==null||a[1]>ymax||b[1]>ymax) continue; doc.line(X(a[0]),Y(a[1]),X(b[0]),Y(b[1]));}
+    }
+    doc.setLineDashPattern([],0);
+    let lxp=pl+2;
+    for(const [txt,col,dash] of legend||[]){ doc.setDrawColor(...col); doc.setLineWidth(0.6); doc.setLineDashPattern(dash||[],0); doc.line(lxp,y+4,lxp+5,y+4); doc.setLineDashPattern([],0);
+      doc.setTextColor(...ink); sp(txt,lxp+6.2,y+4.8); lxp+=doc.getTextWidth(txt)+11; }
+    if(withCase&&state.L<=maxS){ doc.setDrawColor(...amber); doc.setLineWidth(0.25); doc.setLineDashPattern([0.8,0.8],0); doc.line(X(state.L),pt,X(state.L),pb); doc.setLineDashPattern([],0); }
+  };
+  const gw=(W-2*M-6)/2, gh=52;
+  const udlPts=fine.map(s=>[s,R(t,s,"udl").kg]), cplPts=fine.map(s=>[s,R(t,s,"cpl").kg]);
+  plot(M,y2,gw,gh,"MAXIMUM LOAD (kg)",niceMax(Math.max(...udlPts.map(p=>p[1]),1)*1.05),[{pts:cplPts,color:muted,width:0.45},{pts:udlPts,color:blue,width:0.7}],[["UDL total",blue],["Centre point",muted]]);
+  plot(M+gw+6,y2,gw,gh,"DEFLECTION AT MAXIMUM UDL (mm)",niceMax(maxS*5),[
+    {pts:[[0,0],[maxS,maxS*5]],color:red,width:0.35,dash:[1.4,1]},
+    {pts:fine.map(s=>[s,R(t,s,"udl").dself]),color:muted,width:0.45},
+    {pts:fine.map(s=>{const u=R(t,s,"udl");return [s,u.kg<50?null:u.defl]}),color:blue,width:0.7}],
+    [["At max UDL",blue],["Self weight",muted],["Limit L/200",red,[1.4,1]]]);
+  y2+=gh+2.5+8;
+  // optional: the load case set on the calculator
+  if(withCase){
+    const L=state.L, ld=loadsOf(), ch=check(t,L,ld), any=!!(ld.q||ld.P||ld.F2||ld.F3), lim=L*5;
+    secHead("YOUR LOAD CASE  ·  "+L+" m / "+(L*3.2808).toFixed(1)+" ft",M,y2,W-2*M);
+    const by=y2+4.5, bh2=31; doc.setFillColor(...white); doc.rect(M,by,W-2*M,bh2,"F");
+    const rows=[]; const imp=state.q*L+state.P+2*state.F2+3*state.F3;
+    if(state.q>0) rows.push(["UDL",fmt0(state.q)+" kg/m × "+L+" m",fmt0(state.q*L)+" kg"]);
+    if(state.P>0) rows.push(["Centre point","1 × "+fmt0(state.P)+" kg",fmt0(state.P)+" kg"]);
+    if(state.F2>0) rows.push(["2 pts at L/3","2 × "+fmt0(state.F2)+" kg",fmt0(2*state.F2)+" kg"]);
+    if(state.F3>0) rows.push(["3 pts at L/4","3 × "+fmt0(state.F3)+" kg",fmt0(3*state.F3)+" kg"]);
+    rows.push(["Total imposed load","",fmt0(imp)+" kg"],["On each support","incl. truss weight",fmt0((imp+t.kgm*L)/2)+" kg"]);
+    doc.autoTable({startY:by+1.5,margin:{left:M+3,right:W-M-82},theme:"plain",body:rows,
+      styles:{font:"helvetica",fontSize:7.4,cellPadding:{top:0.95,bottom:0.95,left:0,right:1},textColor:ink,lineColor:silver,lineWidth:{bottom:0.15}},
+      columnStyles:{1:{textColor:muted},2:{halign:"right",fontStyle:"bold"}},
+      didParseCell:d=>{ if(d.row.index>=rows.length-2&&d.column.index===0) d.cell.styles.fontStyle="bold"; }});
+    const ok=any&&ch.max<=1, bad=ch.max>1, dmm=v=>v<100?v.toFixed(1):fmt0(v);
+    const kt=[["CAPACITY USED",any?(ch.max*100).toFixed(0)+" %":"-",bad?"overloaded":"of the truss rating",bad?red:navy],["DEFLECTION",dmm(ch.defl)+" mm","under these loads",ch.defl>lim?red:blue],["ALLOWED",lim.toFixed(0)+" mm","span / 200",navy],["SELF WEIGHT",dmm(ch.dself)+" mm","total "+dmm(ch.defl+ch.dself)+" mm",navy]];
+    const kx=M+92, kw2=(W-M-kx-3-6)/4;
+    kt.forEach(([lab,big,small,col],i)=>{const x=kx+i*(kw2+2);
+      doc.setFillColor(...paper); doc.rect(x,by+3,kw2,18,"F"); doc.setFillColor(...col); doc.rect(x,by+3,kw2,1,"F");
+      doc.setFont("helvetica","bold"); doc.setFontSize(5.6); doc.setTextColor(...muted); sp(lab,x+2,by+8,{charSpace:0.3});
+      doc.setFontSize(11.5); doc.setTextColor(...col); sp(big,x+2,by+14.2);
+      doc.setFont("helvetica","normal"); doc.setFontSize(6); doc.setTextColor(...muted); sp(small,x+2,by+18.4);});
+    const verdict=!any?"NO LOAD SET":bad?"OVERLOADED · REDUCE THE LOAD OR USE A DEEPER TRUSS":"WITHIN THE LOAD AND DEFLECTION LIMITS";
+    doc.setFont("helvetica","bold"); doc.setFontSize(7); const vw=doc.getTextWidth(verdict)+verdict.length*0.35+7;
+    doc.setFillColor(...(bad?red:ok?green:muted)); doc.roundedRect(kx,by+23.5,vw,5.4,1,1,"F"); doc.setTextColor(...white); sp(verdict,kx+3.5,by+27.3,{charSpace:0.35});
+    y2=by+bh2+7;
+  }
+  doc.setFont("helvetica","normal"); doc.setFontSize(7); doc.setTextColor(...muted);
+  sp(doc.splitTextToSize("Deflection is the mid-span sag under the imposed load shown, without safety factors, with the shear deformation of the bracing included. Each deflection column belongs to the load to its left. Self-weight sag is listed separately and is not counted against the limit of span / 200. Single span on two supports, loads hung at the nodes. Every rig should be checked by a competent engineer before loading.",W-2*M),M,y2);
+  footer(2);
+  return doc.output("blob");
+}
+function buildCsv(t){
+  const q=v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v;
+  const spans=[...new Set([...PDF_SPANS.filter(x=>x<=t.maxL+1e-9), ...(state.L<=t.maxL?[state.L]:[])])].sort((a,b)=>a-b);
+  const f=r=>r.kg<50?"-":String(Math.floor(r.kg/10)*10), d=r=>r.kg<50?"-":r.defl.toFixed(1);
+  const rows=spans.map(L=>{const u=R(t,L,"udl"),c=R(t,L,"cpl"),p2=R(t,L,"p2"),p3=R(t,L,"p3");
+    return [L,(L*3.2808).toFixed(1),f(u),u.kg<50?"-":Math.round(u.kg/L),d(u),f(c),d(c),f(p2),d(p2),f(p3),d(p3),u.dself.toFixed(1),(L*5).toFixed(0),GOV[u.gov]];});
+  const lines=[["Vardaman Safetech - Load and Deflection Chart"],["Truss",t.name],["Profile (mm)",t.profile],["Main chords",t.chords],["Braces",t.braces],["Hardware",t.joint.text],["Weight (kg/m)",t.kgm],
+    ["Basis","EN 1999-1-1 / EN 17115; factors 1.35 / 1.5 x dynamic 1.2; deflection limit L/200; max imposed load per case, rounded down to 10 kg; deflection at that load, self weight not included"],[],
+    ["Span (m)","Span (ft)","Max UDL total (kg)","UDL (kg/m)","Deflection at max UDL (mm)","Centre point (kg)","Deflection at max centre point (mm)","2 pts at L/3 (kg each)","Deflection at max 2 pts (mm)","3 pts at L/4 (kg each)","Deflection at max 3 pts (mm)","Self-weight sag (mm)","Limit L/200 (mm)","UDL limited by"],
+    ...rows];
+  return "﻿"+lines.map(r=>r.map(x=>q(String(x))).join(",")).join("\r\n");
+}
+let DL=null, DLtried=false;
+function androidDL(){
+  const toB64=d=>new Promise((res,rej)=>{
+    if(typeof d==="string"){ const b=new Blob([d]); d=b; }
+    const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(",")[1]); fr.onerror=rej; fr.readAsDataURL(d);
+  });
+  return {save:async({filename,data})=>{
+    const mime=/\.pdf$/i.test(filename)?"application/pdf":/\.csv$/i.test(filename)?"text/csv":"application/octet-stream";
+    const r=window.AndroidBridge.saveFile(filename,await toB64(data),mime);
+    if(r!=="saved") throw {code:"unavailable",message:r};
+    return {status:"saved"};
+  }};
+}
+async function getDL(){
+  if(window.AndroidBridge&&window.AndroidBridge.saveFile){ DL=androidDL(); return DL; }
+  if(DL||DLtried) return DL;
+  DLtried=true;
+  try{ if(window.claude&&window.claude.use) DL=await window.claude.use("downloads"); }catch(e){ DL=null; }
+  return DL;
+}
+function dlMsg(txt,bad){const m=$("dlMsg"); m.textContent=txt||""; m.className="dl-msg"+(bad?" bad":""); const n=$("dlMainNote"); n.textContent=txt||"2-page data sheet: loads and deflection for the truss selected"; n.style.color=bad?"var(--bad)":"";}
+let lastUrl=null;
+function previewPdf(blob,name){
+  if(lastUrl) URL.revokeObjectURL(lastUrl);
+  lastUrl=URL.createObjectURL(blob);
+  $("pdfViewName").textContent=name; $("pdfFrame").src=lastUrl; $("pdfView").hidden=false; $("pdfViewClose").focus();
+}
+$("pdfViewClose").addEventListener("click",()=>{$("pdfView").hidden=true; $("pdfFrame").src="about:blank";});
+$("pdfView").addEventListener("keydown",e=>{ if(e.key==="Escape") $("pdfViewClose").click(); });
+async function offer(kind,btnId){
+  const t=cur(), btn=$(btnId), name=fileBase(t)+(kind==="pdf"?".pdf":".csv");
+  btn.disabled=true; dlMsg(kind==="pdf"?"Preparing the PDF…":"");
+  try{
+    if(kind==="pdf"&&!window.jspdf){dlMsg("The PDF tool could not load. Check the connection and reload the page.",true); return;}
+    const data=kind==="pdf"?buildPdf(t):buildCsv(t);
+    const dl=await getDL();
+    if(!dl){
+      if(kind==="pdf"){ previewPdf(data,name); dlMsg(""); }
+      else dlMsg("This app can't save files from the page. Open the calculator in a web browser to get the CSV.",true);
+      return;
+    }
+    try{
+      const r=await dl.save({filename:name,data});
+      dlMsg(r&&r.status==="saved"?(kind==="pdf"?"PDF saved.":"CSV saved."):"");
+    }catch(e){
+      const c=e&&e.code;
+      if(c==="declined") dlMsg("");
+      else if(c==="rate_limited") dlMsg("A save is already waiting for your answer.",true);
+      else if(kind==="pdf"){ previewPdf(data,name); dlMsg(""); }
+      else dlMsg("This app can't save files from the page. Open the calculator in a web browser to get the CSV.",true);
+    }
+  }finally{btn.disabled=false;}
+}
+$("dlPdfMain").addEventListener("click",()=>offer("pdf","dlPdfMain"));
+$("dlPdf").addEventListener("click",()=>offer("pdf","dlPdf"));
+$("dlCsv").addEventListener("click",()=>offer("csv","dlCsv"));
+getDL();
+initUI(); readInputs(); render();
+</script>
+
+</body></html>

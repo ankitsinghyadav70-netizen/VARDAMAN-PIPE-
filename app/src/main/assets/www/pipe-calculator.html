@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script>/* Android app bridge: lets "save PDF/CSV" buttons write to Downloads */
+(function(){if(!window.AndroidBridge)return;
+function b64(d){return new Promise(function(res,rej){if(typeof d==="string")d=new Blob([d]);var fr=new FileReader();fr.onload=function(){res(String(fr.result).split(",")[1])};fr.onerror=rej;fr.readAsDataURL(d)})}
+function mime(n){return /\.pdf$/i.test(n)?"application/pdf":/\.csv$/i.test(n)?"text/csv":/\.png$/i.test(n)?"image/png":/\.jpe?g$/i.test(n)?"image/jpeg":"application/octet-stream"}
+var dl={save:function(o){var n=o.filename||"file";return b64(o.data).then(function(s){var r=window.AndroidBridge.saveFile(n,s,mime(n));if(r!=="saved")throw{code:"unavailable",message:r};return{status:"saved"}})}};
+window.claude=window.claude||{};window.claude.use=function(n){return Promise.resolve(n==="downloads"?dl:null)};
+document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a[download]");if(!a||!/^(blob|data):/.test(a.href))return;e.preventDefault();fetch(a.href).then(function(r){return r.blob()}).then(function(b){return dl.save({filename:a.getAttribute("download")||"file",data:b})}).catch(function(){})},true);
+})();</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1f2b47">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Truss Pipe Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: shop-floor tool, plain and exact, like a fabricator's job card
+   IDEA: the Vardaman letterhead job sheet: navy band, figures in big type
+   PICTURE: the live order total, large, in the navy band at the top
+   COLOUR and TYPE: navy #1f2b47 field, aluminium grey ground, red #e5412d accent; Archivo + Inter
+   LAYOUT: one phone column: total band, tabs, truss cards, pipe-to-buy list */
+:root{--bg:#eceff3;--card:#fff;--ink:#141a26;--mut:#5d6677;--line:#dde1e8;--navy:#1f2b47;--navy2:#2b3a5e;--acc:#e5412d;--in:#f6f7f9;--yel:#fff6cf;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1220;--card:#161d30;--ink:#e9edf5;--mut:#9aa3b6;--line:#26304a;--navy:#141c31;--navy2:#22304f;--in:#10172a;--yel:#2c2a1a;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#0d1220;--card:#161d30;--ink:#e9edf5;--mut:#9aa3b6;--line:#26304a;--navy:#141c31;--navy2:#22304f;--in:#10172a;--yel:#2c2a1a;color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Archivo,Inter,sans-serif;margin:0;line-height:1.1}
+.hero{background:var(--navy);color:#fff;padding:18px max(4vw,16px) 22px}
+.brand{font:600 13px Inter,sans-serif;opacity:.75;letter-spacing:.02em}
+.hero h1{font-size:20px;font-weight:600;margin:2px 0 14px;opacity:.95}
+.big{font:800 clamp(34px,10vw,52px)/1.05 Archivo,sans-serif;white-space:nowrap}
+.big small{font-size:15px;font-weight:600;opacity:.7;margin-left:6px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:14px;opacity:.88}
+.meta b{font-weight:600}
+.hint{margin-top:10px;font-size:13px;background:rgba(255,255,255,.1);border-radius:8px;padding:8px 10px}
+nav{position:sticky;top:0;z-index:5;display:flex;background:var(--navy2)}
+nav button{flex:1;background:none;border:0;color:#cfd6e6;font:600 15px Inter,sans-serif;min-height:48px;border-bottom:3px solid transparent;cursor:pointer}
+nav button.on{color:#fff;border-bottom-color:var(--acc)}
+main{max-width:760px;margin:0 auto;padding:14px max(3vw,12px) 40px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:0 16px;min-height:44px;font:600 15px Inter,sans-serif;cursor:pointer}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.chip.add{border-style:dashed;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:22px}
+.mut{color:var(--mut);font-size:14px}
+.row{display:grid;grid-template-columns:52px auto minmax(0,1fr);gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.len{font:800 22px Archivo,sans-serif}
+.step{display:flex;align-items:center}
+.step button{width:44px;height:44px;border:1px solid var(--line);background:var(--in);color:var(--ink);font-size:22px;cursor:pointer}
+.step button:first-child{border-radius:10px 0 0 10px}.step button:last-child{border-radius:0 10px 10px 0}
+.step input{width:58px;height:44px;border:1px solid var(--line);border-left:0;border-right:0;text-align:center;font:600 17px Inter,sans-serif;background:var(--yel);color:var(--ink)}
+.out{font-size:14px;color:var(--mut);text-align:right;line-height:1.35}
+.out b{color:var(--ink);font-size:15px}
+.sub{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;border-top:2px solid var(--ink);padding-top:10px;font-weight:600}
+details{margin-top:12px}
+summary{cursor:pointer;color:var(--navy2);font-weight:600;min-height:40px;display:flex;align-items:center}
+:root[data-theme=dark] summary{color:#9fb4e6}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) summary{color:#9fb4e6}}
+.grid{width:100%;border-collapse:collapse;margin-top:6px}
+.grid th,.grid td{padding:6px 4px;text-align:right;font-size:14px}
+.grid th:first-child,.grid td:first-child{text-align:left}
+input.n,input.t{width:100%;min-height:44px;border:1px solid var(--line);border-radius:8px;background:var(--in);color:var(--ink);font:16px Inter,sans-serif;padding:0 10px;text-align:right}
+input.t{text-align:left}
+input:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+.yel{background:var(--yel)!important}
+h3{font-size:18px;margin:22px 0 10px}
+table.buy{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.buy th,.buy td{padding:10px 10px;text-align:right;border-bottom:1px solid var(--line);font-size:15px;white-space:nowrap}
+.buy th{font-size:12px;color:var(--mut);font-weight:600;white-space:normal}
+.buy th:first-child,.buy td:first-child{text-align:left}
+.buy td small{display:block;color:var(--mut);font-size:12px}
+.buy tr.tot td{font-weight:700;border-bottom:0}
+.scroll{overflow-x:auto}
+.btn{min-height:48px;border:0;border-radius:12px;background:var(--navy);color:#fff;font:600 16px Inter,sans-serif;padding:0 18px;cursor:pointer}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn.warn{background:var(--acc)}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.f2{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:10px}
+label.l{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{flex:1;min-height:46px;border:0;background:var(--card);color:var(--ink);font:600 15px Inter,sans-serif;cursor:pointer}
+.seg button.on{background:var(--navy);color:#fff}
+.pk{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.pk label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:0 12px;min-height:44px}
+textarea{width:100%;min-height:180px;font:14px/1.4 ui-monospace,monospace;border-radius:10px;border:1px solid var(--line);background:var(--in);color:var(--ink);padding:10px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+@media (max-width:420px){.buy th,.buy td{padding:8px 6px;font-size:13px}.buy td small{font-size:11px}.row{grid-template-columns:44px auto minmax(0,1fr);gap:8px}.step input{width:50px}.out{font-size:13px}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="brand">VARDAMAN SAFETECH</div>
+  <h1>Truss pipe calculator · 6082-T6</h1>
+  <div class="big" id="hTotal">₹ 0</div>
+  <div class="meta" id="hMeta"></div>
+  <div class="hint" id="hHint" hidden>Add your pipe rates in the <b>Pipe rates</b> tab to see ₹ amounts.</div>
+</header>
+<nav>
+  <button data-act="tab" data-v="order" class="on">Order</button>
+  <button data-act="tab" data-v="pipes">Pipe rates</button>
+  <button data-act="tab" data-v="settings">Settings</button>
+</nav>
+<main id="app"></main>
+<div class="toast" id="toast"></div>
+<script>
+{
+const KEY='vs-truss-calc-v1';
+const DEF={basis:'kg',added:20,density:2.7,
+ pipes:[{id:'p25',od:25,t:3,rate:0},{id:'p30',od:30,t:3,rate:0},{id:'p50',od:50,t:3,rate:0},{id:'p60',od:60,t:4,rate:0}],
+ trusses:[
+  {id:'t1',name:'800 × 550',pipes:['p30','p50','p60'],rows:[{len:3,qty:46,m:{p30:16,p50:11,p60:11.48}},{len:2,qty:4,m:{p30:11,p50:8,p60:7.48}},{len:1,qty:4,m:{p30:6,p50:6,p60:3.48}}]},
+  {id:'t2',name:'410 × 410',pipes:['p30','p50','p60'],rows:[{len:3,qty:8,m:{p30:15.5,p50:2.5,p60:11.5}},{len:2,qty:4,m:{p30:9.5,p50:2.5,p60:7.48}},{len:1,qty:8,m:{p30:4.5,p50:2.5,p60:3.5}}]},
+  {id:'t3',name:'400 × 400',pipes:['p25','p50'],rows:[{len:3,qty:0,m:{p25:15.5,p50:14}},{len:2,qty:0,m:{p25:9.5,p50:10}},{len:1,qty:0,m:{p25:4.5,p50:6.5}}]},
+  {id:'t4',name:'525 × 600',pipes:['p30','p50'],rows:[{len:3,qty:0,m:{p30:15,p50:18.1}},{len:2,qty:0,m:{p30:11,p50:13.1}},{len:1,qty:0,m:{p30:4,p50:8.1}}]}
+ ]};
+const clone=o=>JSON.parse(JSON.stringify(o));
+let S,cur='t1',tab='order',armed='',newOpen=false;
+try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):clone(DEF)}catch(e){S=clone(DEF)}
+if(!S||!S.trusses||!S.trusses.length)S=clone(DEF);
+cur=S.trusses[0].id;
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
+const pipe=id=>S.pipes.find(p=>p.id===id);
+const kgm=p=>Math.PI*(num(p.od)-num(p.t))*num(p.t)*num(S.density)/1000;
+const pn=p=>p?num(p.od)+' × '+num(p.t):'?';
+const fx=(n,d=2)=>n.toLocaleString('en-IN',{minimumFractionDigits:d,maximumFractionDigits:d});
+const rs=n=>'₹ '+Math.round(n).toLocaleString('en-IN');
+const mult=()=>1+num(S.added)/100;
+const pct=()=>fx(num(S.added),num(S.added)%1?1:0)+'%';
+const cost=(p,m)=>S.basis==='kg'?m*kgm(p)*num(p.rate):m*num(p.rate);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const T=()=>S.trusses.find(t=>t.id===cur)||S.trusses[0];
+function rowCalc(t,r){let kg=0,c=0;for(const id of t.pipes){const p=pipe(id);if(!p)continue;const m=num(r.m[id]);kg+=m*kgm(p);c+=cost(p,m)}return{kg,c}}
+function trussTot(t){let q=0,kg=0,c=0;for(const r of t.rows){const x=rowCalc(t,r),n=num(r.qty);q+=n;kg+=x.kg*n;c+=x.c*n}return{q,kg,c}}
+function totals(){const per={};for(const p of S.pipes)per[p.id]={m:0};
+ for(const t of S.trusses)for(const r of t.rows)for(const id of t.pipes)if(per[id])per[id].m+=num(r.m[id])*num(r.qty);
+ let M=0,KG=0,C=0;for(const p of S.pipes){const o=per[p.id];o.kg=o.m*kgm(p);o.c=cost(p,o.m);M+=o.m;KG+=o.kg;C+=o.c}return{per,M,KG,C}}
+const ratesSet=()=>S.pipes.some(p=>num(p.rate)>0);
+
+function viewOrder(){const t=T();
+ const chips=S.trusses.map(x=>`<button class="chip${x.id===t.id?' on':''}" data-act="pick" data-v="${x.id}">${esc(x.name)}</button>`).join('')+`<button class="chip add" data-act="newtruss">+ New truss</button>`;
+ const nf=newOpen?`<div class="card"><h2>New truss type</h2><form id="nt"><div class="f2"><div><label class="l" for="ntName">Size (e.g. 300 × 300)</label><input class="t" id="ntName" required></div></div>
+  <label class="l" style="margin-top:12px">Pipes used</label><div class="pk">${S.pipes.map(p=>`<label><input type="checkbox" value="${p.id}"> ${pn(p)}</label>`).join('')}</div>
+  <div class="btns"><button class="btn">Create</button><button type="button" class="btn ghost" data-act="newtruss">Cancel</button></div></form></div>`:'';
+ const rows=t.rows.map((r,i)=>`<div class="row"><div class="len">${num(r.len)} m</div>
+  <div class="step"><button data-act="dec" data-i="${i}" aria-label="Less">−</button><input inputmode="numeric" aria-label="Number of ${num(r.len)} m trusses" data-k="qty" data-i="${i}" value="${num(r.qty)||''}" placeholder="0"><button data-act="inc" data-i="${i}" aria-label="More">+</button></div>
+  <div class="out" id="o${i}"></div></div>`).join('');
+ const grid=`<table class="grid"><thead><tr><th>Length</th>${t.pipes.map(id=>`<th>${pn(pipe(id))} (m)</th>`).join('')}</tr></thead><tbody>${t.rows.map((r,i)=>`<tr><td>${num(r.len)} m</td>${t.pipes.map(id=>`<td><input class="n" inputmode="decimal" data-k="m" data-i="${i}" data-p="${id}" value="${num(r.m[id])}"></td>`).join('')}</tr>`).join('')}</tbody></table>`;
+ return `<div class="chips">${chips}</div>${nf}
+ <article class="card"><h2>${esc(t.name)} beam</h2><div class="mut">Pipes: ${t.pipes.map(id=>pn(pipe(id))).join(' · ')} — enter number of trusses</div>
+ <div style="margin-top:10px">${rows}</div><div class="sub" id="sub"></div>
+ <details><summary>Edit pipe lengths per truss</summary>${grid}
+  <div class="f2"><div><label class="l" for="tn">Truss name</label><input class="t" id="tn" data-k="name" value="${esc(t.name)}"></div></div>
+  <div class="btns"><button class="btn ${armed==='t'?'warn':'ghost'}" data-act="deltruss">${armed==='t'?'Tap again to delete '+esc(t.name):'Delete this truss type'}</button></div></details></article>
+ <h3>Pipe to buy — all trusses</h3><p class="mut" style="margin:-4px 0 8px">Big figure includes the added %; small figure is before it.</p><div class="scroll" id="buy"></div>
+ <h3>By truss type</h3><div class="scroll" id="byt"></div>
+ <div class="btns"><button class="btn" data-act="copy">Copy order summary</button></div><div id="cpy"></div>`}
+
+function viewPipes(){const u=S.basis==='kg'?'₹ per kg':'₹ per metre';
+ return `<p class="mut">Rates are ${u}. Change this in Settings. Weight uses 6082-T6 at ${fx(num(S.density),2)} g/cm³.</p>`+
+ S.pipes.map(p=>{const used=S.trusses.some(t=>t.pipes.includes(p.id));return `<div class="card"><h2>${pn(p)} mm pipe</h2><div class="mut" id="k_${p.id}"></div>
+ <div class="f2"><div><label class="l" for="r_${p.id}">Rate (${u})</label><input class="n yel" id="r_${p.id}" inputmode="decimal" data-k="rate" data-p="${p.id}" value="${num(p.rate)||''}" placeholder="0"></div>
+ <div><label class="l" for="d_${p.id}">OD (mm)</label><input class="n" id="d_${p.id}" inputmode="decimal" data-k="od" data-p="${p.id}" value="${num(p.od)}"></div>
+ <div><label class="l" for="w_${p.id}">Thickness (mm)</label><input class="n" id="w_${p.id}" inputmode="decimal" data-k="t" data-p="${p.id}" value="${num(p.t)}"></div></div>
+ ${used?'':`<div class="btns"><button class="btn ghost" data-act="delpipe" data-p="${p.id}">Remove pipe</button></div>`}</div>`}).join('')+
+ `<div class="card"><h2>Add pipe size</h2><form id="np"><div class="f2"><div><label class="l" for="npo">OD (mm)</label><input class="n" id="npo" inputmode="decimal" required></div><div><label class="l" for="npt">Thickness (mm)</label><input class="n" id="npt" inputmode="decimal" required></div></div><div class="btns"><button class="btn">Add pipe</button></div></form></div>`}
+
+function viewSettings(){return `<div class="card"><h2>Rate basis</h2><p class="mut">How you buy aluminium pipe.</p>
+ <div class="seg"><button data-act="basis" data-v="kg" class="${S.basis==='kg'?'on':''}">Per kg</button><button data-act="basis" data-v="m" class="${S.basis==='m'?'on':''}">Per metre</button></div></div>
+ <div class="card"><h2>Added %</h2><p class="mut">Margin or wastage added on pipe metres, weight and cost.</p>
+ <div class="f2"><div><label class="l" for="ad">Added (%)</label><input class="n yel" id="ad" inputmode="decimal" data-k="added" value="${num(S.added)}"></div>
+ <div><label class="l" for="de">Density (g/cm³)</label><input class="n" id="de" inputmode="decimal" data-k="density" value="${num(S.density)}"></div></div></div>
+ <div class="card"><h2>Reset</h2><p class="mut">Puts back the four truss types, pipe sizes and quantities from your notes. Rates are cleared.</p>
+ <div class="btns"><button class="btn ${armed==='r'?'warn':'ghost'}" data-act="reset">${armed==='r'?'Tap again to reset everything':'Reset to defaults'}</button></div></div>
+ <p class="mut">Your entries are saved on this phone.</p>`}
+
+function outputs(){const a=totals(),k=mult();
+ document.getElementById('hTotal').innerHTML=rs(a.C*k)+`<small>with ${pct()}</small>`;
+ document.getElementById('hMeta').innerHTML=`<span>Before %: <b>${rs(a.C)}</b></span><span>Weight: <b>${fx(a.KG*k,1)} kg</b> with ${pct()} (${fx(a.KG,1)} kg)</span><span>Rate: <b>${S.basis==='kg'?'per kg':'per metre'}</b></span>`;
+ document.getElementById('hHint').hidden=ratesSet();
+ if(tab==='order'){const t=T();
+  t.rows.forEach((r,i)=>{const x=rowCalc(t,r),o=document.getElementById('o'+i);if(o)o.innerHTML=`<b>${fx(x.kg)} kg</b> each<br>${rs(x.c)} → <b>${rs(x.c*k)}</b>`});
+  const tt=trussTot(t);document.getElementById('sub').innerHTML=`<span>${tt.q} trusses · ${fx(tt.kg,1)} kg</span><span>${rs(tt.c*k)} <span class="mut">with ${pct()}</span></span>`;
+  const used=S.pipes.filter(p=>a.per[p.id].m>0||S.trusses.some(x=>x.pipes.includes(p.id)));
+  document.getElementById('buy').innerHTML=`<table class="buy"><thead><tr><th>Pipe (mm)</th><th>Metres<br>with ${pct()}</th><th>Weight kg<br>with ${pct()}</th><th>Amount<br>with ${pct()}</th></tr></thead><tbody>${used.map(p=>{const o=a.per[p.id];return `<tr><td>${pn(p)}<small>${fx(kgm(p),3)} kg/m</small></td><td>${fx(o.m*k,1)}<small>${fx(o.m,1)}</small></td><td>${fx(o.kg*k,1)}<small>${fx(o.kg,1)}</small></td><td>${rs(o.c*k)}<small>${rs(o.c)}</small></td></tr>`}).join('')}
+   <tr class="tot"><td>Total</td><td>${fx(a.M*k,1)}</td><td>${fx(a.KG*k,1)}</td><td>${rs(a.C*k)}</td></tr></tbody></table>`;
+  document.getElementById('byt').innerHTML=`<table class="buy"><thead><tr><th>Truss</th><th>3 m / 2 m / 1 m</th><th>Weight kg</th><th>Amount<br>with ${pct()}</th></tr></thead><tbody>${S.trusses.map(x=>{const y=trussTot(x);return `<tr><td>${esc(x.name)}</td><td>${x.rows.map(r=>num(r.qty)).join(' / ')}</td><td>${fx(y.kg,1)}</td><td>${rs(y.c*k)}</td></tr>`}).join('')}</tbody></table>`}
+ if(tab==='pipes')S.pipes.forEach(p=>{const e=document.getElementById('k_'+p.id);if(e)e.textContent=fx(kgm(p),3)+' kg per metre'})}
+
+function render(){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===tab));
+ document.getElementById('app').innerHTML=tab==='order'?viewOrder():tab==='pipes'?viewPipes():viewSettings();outputs()}
+
+function summary(){const a=totals(),k=mult();let s='VARDAMAN SAFETECH – Truss order\n\n';
+ for(const t of S.trusses){const q=t.rows.filter(r=>num(r.qty)>0);if(q.length)s+=t.name+': '+q.map(r=>num(r.len)+' m × '+num(r.qty)).join(', ')+'\n'}
+ s+=`\nPipe to buy (with ${pct()} added):\n`;
+ for(const p of S.pipes){const o=a.per[p.id];if(o.m>0)s+=`${pn(p)} mm: ${fx(o.m*k,1)} m · ${fx(o.kg*k,1)} kg`+(ratesSet()?` · ${rs(o.c*k)}`:'')+'\n'}
+ s+=`\nTotal weight: ${fx(a.KG,1)} kg (with ${pct()}: ${fx(a.KG*k,1)} kg)\n`;
+ if(ratesSet())s+=`Total: ${rs(a.C)} (with ${pct()}: ${rs(a.C*k)})\n`;return s}
+let tm;function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(tm);tm=setTimeout(()=>e.classList.remove('show'),1600)}
+
+document.addEventListener('input',e=>{const el=e.target,k=el.dataset.k;if(!k)return;const t=T(),v=el.value;
+ if(k==='qty')t.rows[+el.dataset.i].qty=Math.max(0,Math.round(num(v)));
+ else if(k==='m')t.rows[+el.dataset.i].m[el.dataset.p]=num(v);
+ else if(k==='name'){t.name=v;document.querySelectorAll('.chip.on').forEach(c=>c.textContent=v)}
+ else if(k==='rate'||k==='od'||k==='t')pipe(el.dataset.p)[k]=num(v);
+ else if(k==='added'||k==='density')S[k]=num(v);
+ save();outputs()});
+
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,t=T();
+ if(a!=='deltruss'&&a!=='reset')armed='';
+ if(a==='tab'){tab=b.dataset.v;render();scrollTo(0,0);return}
+ if(a==='pick'){cur=b.dataset.v;newOpen=false;render();return}
+ if(a==='newtruss'){newOpen=!newOpen;render();if(newOpen){const n=document.getElementById('ntName');if(n)n.focus()}return}
+ if(a==='inc'||a==='dec'){const r=t.rows[+b.dataset.i];r.qty=Math.max(0,num(r.qty)+(a==='inc'?1:-1));const inp=document.querySelector(`input[data-k=qty][data-i="${b.dataset.i}"]`);if(inp)inp.value=r.qty||'';save();outputs();return}
+ if(a==='basis'){S.basis=b.dataset.v;save();render();return}
+ if(a==='deltruss'){if(armed!=='t'){armed='t';render();document.querySelector('details').open=true;return}
+  if(S.trusses.length>1){S.trusses=S.trusses.filter(x=>x.id!==t.id);cur=S.trusses[0].id}armed='';save();render();toast('Truss type deleted');return}
+ if(a==='delpipe'){S.pipes=S.pipes.filter(p=>p.id!==b.dataset.p);save();render();return}
+ if(a==='reset'){if(armed!=='r'){armed='r';render();return}S=clone(DEF);cur=S.trusses[0].id;armed='';save();render();toast('Reset done');return}
+ if(a==='copy'){const s=summary(),done=()=>toast('Summary copied');
+  const fb=()=>{document.getElementById('cpy').innerHTML='<p class="mut">Copy this text:</p><textarea readonly id="ta"></textarea>';const ta=document.getElementById('ta');ta.value=s;ta.focus();ta.select()};
+  try{navigator.clipboard.writeText(s).then(done,fb)}catch(err){fb()}}});
+
+document.addEventListener('submit',e=>{e.preventDefault();const f=e.target;
+ if(f.id==='nt'){const name=f.querySelector('#ntName').value.trim(),ps=[...f.querySelectorAll('input[type=checkbox]:checked')].map(c=>c.value);
+  if(!name||!ps.length){toast('Add a name and at least one pipe');return}
+  const id='t'+Date.now(),m=()=>Object.fromEntries(ps.map(p=>[p,0]));
+  S.trusses.push({id,name,pipes:ps,rows:[3,2,1].map(len=>({len,qty:0,m:m()}))});cur=id;newOpen=false;save();render();
+  const d=document.querySelector('details');if(d)d.open=true;toast('Now enter pipe lengths')}
+ if(f.id==='np'){const od=num(f.querySelector('#npo').value),th=num(f.querySelector('#npt').value);if(!od||!th||th*2>=od){toast('Check OD and thickness');return}
+  S.pipes.push({id:'p'+Date.now(),od,t:th,rate:0});save();render();toast('Pipe added')}});
+
+render();
+}
+</script>
+</body>
+</html>

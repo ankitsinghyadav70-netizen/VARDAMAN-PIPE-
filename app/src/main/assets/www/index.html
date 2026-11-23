@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1f2b47">
+<title>Vardaman Safetech</title>
+<style>
+:root{--bg:#eceff3;--card:#fff;--ink:#141a26;--mut:#5d6677;--line:#dde1e8;--navy:#1f2b47}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1220;--card:#161d30;--ink:#e9edf5;--mut:#9aa3b6;--line:#26304a;--navy:#141c31}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Roboto,sans-serif}
+header{background:var(--navy);color:#fff;padding:28px 20px 30px}
+header small{display:block;opacity:.75;font-weight:600;letter-spacing:.02em}
+header h1{margin:4px 0 0;font-size:30px;line-height:1.1}
+header p{margin:8px 0 0;opacity:.8;font-size:15px}
+main{max-width:640px;margin:0 auto;padding:16px}
+a.tile{display:flex;gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 16px;margin-bottom:12px;color:inherit;text-decoration:none;min-height:84px}
+a.tile:active{transform:scale(.99)}
+.ic{flex:none;width:48px;height:48px;border-radius:12px;background:var(--navy);display:grid;place-items:center}
+.ic svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tile b{display:block;font-size:18px}
+.tile span{color:var(--mut);font-size:14px}
+footer{text-align:center;color:var(--mut);font-size:13px;padding:10px 16px 30px}
+</style>
+</head>
+<body>
+<header>
+  <small>VARDAMAN SAFETECH</small>
+  <h1>Truss tools</h1>
+  <p>Shaping structures, securing lives</p>
+</header>
+<main>
+  <a class="tile" href="pipe-calculator.html">
+    <div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg></div>
+    <div><b>Truss pipe calculator</b><span>Pipe metres, kg and cost per order</span></div>
+  </a>
+  <a class="tile" href="load-calculator.html">
+    <div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8h20M2 16h20M4 8l4 8 4-8 4 8 4-8"/></svg></div>
+    <div><b>Truss load calculator</b><span>Loads, deflection and data sheets</span></div>
+  </a>
+  <a class="tile" href="quotation.html">
+    <div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg></div>
+    <div><b>Quotation</b><span>Make and save quotation PDFs</span></div>
+  </a>
+</main>
+<footer>Use the phone's back button to return here. Saved files go to Downloads › Vardaman.</footer>
+</body>
+</html>
